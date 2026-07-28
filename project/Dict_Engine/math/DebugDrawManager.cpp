@@ -364,8 +364,8 @@ void DebugDrawManager::RegisterPSO()
 
 	// 深度設定
 	config.depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-	config.depthEnable = false;
-	config.depthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	config.depthEnable = true;
+	config.depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 	config.depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
     config.toporogyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;

@@ -46,6 +46,26 @@ void Model::Draw(const UINT& instanceCount)
 	}
 }
 
+void Model::DrawMesh(const uint32_t meshIndex, const UINT& instanceCount)
+{
+	if (instanceCount <= 0)
+	{
+		return;
+	}
+
+	instanceCount_ = instanceCount;
+
+	ID3D12GraphicsCommandList* commandList = DirectXBase::GetInstance()->GetCommandList();
+
+	const auto& mesh = modelData_.meshes[meshIndex];
+
+	commandList->IASetVertexBuffers(0, 1, &mesh.vertexBufferView);	// VBVを設定
+	commandList->IASetIndexBuffer(&mesh.indexBufferView);	// IBVを設定
+
+	// 描画！（DrawCall/ドローコール）。
+	commandList->DrawIndexedInstanced(UINT(mesh.indices.size()), instanceCount_, 0, 0, 0);
+}
+
 //Material Model::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename, const std::string& mtlname)
 //{
 //	// 1. 中で必要となる変数の宣言

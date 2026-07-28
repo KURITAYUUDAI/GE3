@@ -26,6 +26,8 @@ public:
 
 	void Draw(const UINT& instanceCount);
 
+	void DrawMesh(const uint32_t meshIndex, const UINT& instanceCount);
+
 	void Finalize();
 
 	static Material LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename, const std::string& mtlname);
@@ -71,7 +73,9 @@ public:	// 外部入出力
 	
 	
 	MeshGeometry& GetMesh(uint32_t meshIndex) { return modelData_.meshes[meshIndex]; }
+	const size_t GetMeshCount() { return modelData_.meshes.size(); }
 	MaterialAsset& GetMaterialAsset(uint32_t materialIndex) { return modelData_.materialAssets[materialIndex]; }
+	const size_t GetMaterialAssetsCount() { return modelData_.materialAssets.size(); }
 	const Node& GetRootNode(uint32_t meshIndex) { return modelData_.rootNode; }
 
 private:

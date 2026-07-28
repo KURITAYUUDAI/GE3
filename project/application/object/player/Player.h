@@ -18,6 +18,8 @@
 #include "ParticleEmitter.h"
 #include "JustAvoidDarken.h"
 
+#include "AnimationUtility.h"
+
 class Player : public ICollisionObserver
 {
 public:
@@ -117,11 +119,18 @@ private:
 	
 	float deltaTime_ = 0.0f;
 
-	std::string psoName_ = "Environment";
+	std::string psoName_ = "Skinning";
 	PSOManager::BlendMode blendMode_ = PSOManager::BlendMode::Normal;
 	PSOManager::FillMode fillMode_ = PSOManager::FillMode::kSolid;
 
 	std::unique_ptr<Object3d> object3d_;
+
+	Animation animation_;
+	float animationTime = 0.0f;
+	Skeleton skeleton_;
+	SkinCluster skinCluster_;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> skinClusterHeap_;
+
 	std::unique_ptr<Collider> collider_;
 
 	EulerTransform transform_;

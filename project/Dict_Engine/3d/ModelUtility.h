@@ -3,6 +3,8 @@
 #include "myMath.h"
 #include "Quaternion.h"
 
+#include <map>
+
 struct VertexData
 {
 	Vector4 position;
@@ -21,10 +23,24 @@ struct Material
 	Matrix4x4 uvTransform = MakeIdentity4x4();
 };
 
+struct VertexWeightData
+{
+	float weight;
+	uint32_t vertexIndex;
+};
+
+struct JointWeightData
+{
+	Matrix4x4 inverseBindPoseMatrix;
+	std::vector<VertexWeightData> vertexWeights;
+};
+
 struct MeshGeometry
 {
 	std::vector<VertexData> vertices;	//!< 頂点データ
 	std::vector<uint32_t> indices;	//!< インデックスデータ
+
+	std::map<std::string, JointWeightData> skinClusterData;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = nullptr;	//<! バッファリソース
 	VertexData* vertexData = nullptr;	//<! バッファポインタ

@@ -399,6 +399,7 @@
     <FxCompile Include="resources\shaders\Font\FreetypeFont.PS.hlsl" />
     <FxCompile Include="resources\shaders\Font\FreetypeFont.VS.hlsl" />
     <FxCompile Include="resources\shaders\Object3d\Object3d.GS.hlsl" />
+    <FxCompile Include="resources\shaders\SkinningObject3d\SkinningObject3d.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dict_Engine\camera\DebugCamera.h">

@@ -67,8 +67,6 @@ void Object3dManager::Initialize(DirectXBase* dxBase)
 		rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// PixelShaderで使う
 		rootParameters[4].Descriptor.ShaderRegister = 2;	// レジスタ番号2を使う
 
-
-
 		// シリアライズ
 		static D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 		descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;

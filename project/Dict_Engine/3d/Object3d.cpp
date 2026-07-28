@@ -28,7 +28,7 @@ void Object3d::Initialize()
 	
 }
 
-void Object3d::Update(const Matrix4x4* worldMatrix, const Matrix4x4* multiplyMatrix)
+void Object3d::Update(const Matrix4x4* worldMatrix, const Matrix4x4* multiplyMatrix, bool applyRootNode)
 {
 	/*worldTransform_.scale_ = transform_.scale;
 	worldTransform_.rotate_ = transform_.rotate;
@@ -47,15 +47,22 @@ void Object3d::Update(const Matrix4x4* worldMatrix, const Matrix4x4* multiplyMat
 		worldTransform_.TransferMatrix(
 			CameraManager::GetInstance()->GetMainCamera()->GetViewProjectionMatrix(),
 			&multipliedMatrix);
-	}
+	} 
 	else
 	{
-		worldTransform_.TransferMatrix(
-			CameraManager::GetInstance()->GetMainCamera()->GetViewProjectionMatrix(),
-			&model_->GetRootNode(0).localMatrix);
+		if (applyRootNode)
+		{
+			worldTransform_.TransferMatrix(
+				CameraManager::GetInstance()->GetMainCamera()->GetViewProjectionMatrix(),
+					&model_->GetRootNode(0).localMatrix);
+		}
+		else
+		{
+			worldTransform_.TransferMatrix(CameraManager::GetInstance()->GetMainCamera()->GetViewProjectionMatrix());
+		}
 	}
 
-	
+
 	/*Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
 	Matrix4x4 worldViewProjectionMatrix;
 
@@ -67,7 +74,8 @@ void Object3d::Update(const Matrix4x4* worldMatrix, const Matrix4x4* multiplyMat
 	transformationMatrixData_->WVP = worldViewProjectionMatrix;*/
 }
 
-void Object3d::Draw()
+void Object3d::Draw(const D3D12_VERTEX_BUFFER_VIEW* additionalVBV, 
+	const D3D12_GPU_DESCRIPTOR_HANDLE* additionalGPUHandle)
 {
 	auto psoSet = PSOManager::GetInstance()->GetPSOData(psoName_, blendMode_, fillMode_);
 
@@ -81,24 +89,23 @@ void Object3d::Draw()
 
 	// wvp用のCBufferの場所を設定
 	worldTransform_.SetCBufferTransformationResource(1);
-	
+
 	// 平行光源用のCBufferをバインド（rootParameter[3] = b1）
 	LightManager::GetInstance()->SetCBufferLightsResource(3);
 
 	// カメラ用のCBufferをバインド（rootParameter[4] = b2）
 	CameraManager::GetInstance()->SetCbufferCameraResource(4);
-	
+
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_)
 	{
-		for (size_t index = 0; index < model_->GetMeshCount(); ++index)
+		for (uint32_t index = 0; index < model_->GetMeshCount(); ++index)
 		{
 			// マテリアルとSRVをバインド
 			material_[model_->GetMesh(index).materialIndex]->Draw(0, 2);
-			model_->DrawMesh(index, 1);
+			model_->DrawMesh(index, 1, additionalVBV, additionalGPUHandle);
 		}
 	}
-
 }
 
 void Object3d::Finalize()
@@ -111,7 +118,7 @@ void Object3d::SetModel(const std::string& filePath)
 	model_ = ModelManager::GetInstance()->FindModel(filePath);
 	material_.clear();
 	material_.resize(model_->GetMaterialAssetsCount());
-	for (size_t index = 0; index < model_->GetMaterialAssetsCount(); ++index)
+	for (uint32_t index = 0; index < model_->GetMaterialAssetsCount(); ++index)
 	{
 		std::unique_ptr<MaterialInstance> material = std::make_unique<MaterialInstance>();
 		material->Initialize();

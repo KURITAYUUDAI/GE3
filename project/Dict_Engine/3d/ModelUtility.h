@@ -11,25 +11,48 @@ struct VertexData
 	Vector4 color;
 };
 
-struct MaterialData
-{
-	std::string textureFilePath;
-	uint32_t textureIndex = 0;
-	Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};
-	float alphaReference = 0.5f;
-};
-
 struct Material
 {
-	Vector4 color;
-
-	int32_t enableLighting;
-	float shininess;
-	float environmentCoefficient;
-	float alphaReference;
-
-	Matrix4x4 uvTransform;
+	Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	int32_t enableLighting = false;
+	float shininess = 10.0f;
+	float environmentCoefficient = 1.0f;
+	float alphaReference = 0.0f;
+	Matrix4x4 uvTransform = MakeIdentity4x4();
 };
+
+struct MeshGeometry
+{
+	std::vector<VertexData> vertices;	//!< 頂点データ
+	std::vector<uint32_t> indices;	//!< インデックスデータ
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = nullptr;	//<! バッファリソース
+	VertexData* vertexData = nullptr;	//<! バッファポインタ
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};	//<! バッファビュー
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource = nullptr;	//<! インデックスリソース
+	uint32_t* indexData = nullptr;	//<! バッファリソース内のデータを指すポインタ
+	D3D12_INDEX_BUFFER_VIEW indexBufferView{};	//<! バッファリソースの使い道を補足するバッファビュー
+
+	uint32_t materialIndex = 0;	 //!< マテリアル番号
+};
+
+struct MaterialAsset
+{
+	std::string name;
+	Material material;
+	std::string textureFilePath;
+	uint32_t textureIndex = 0;
+};
+
+//struct MaterialInstance
+//{
+//	Material material;
+//	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource = nullptr;	//<! マテリアル用バッファリソース
+//	Material* materialData = nullptr;	//<! バッファリソース内のデータを指すポインタ
+//	std::string textureFilePath;
+//	uint32_t textureIndex = 0;
+//};
 
 struct Node
 {
@@ -37,37 +60,15 @@ struct Node
 	Matrix4x4 localMatrix;
 	std::string name;
 
+	std::vector<uint32_t> meshIndices;
 	std::vector<Node> children;
-};
-
-struct Mesh
-{
-	std::vector<VertexData> vertices;	//!< 頂点データ
-	std::vector<uint32_t> indices;	//!< インデックスデータ
-	MaterialData material;
-	Node rootNode;
-
-	// バッファリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	VertexData* vertexData_ = nullptr;
-	// バッファリソースの使い道を補足するバッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-
-	// インデックスリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	uint32_t* indexData_ = nullptr;
-	// バッファリソースの使い道を補足するバッファビュー
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
-
-	// マテリアル用バッファリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	Material* materialData_ = nullptr;
 };
 
 struct ModelData
 {
-	std::vector<Mesh> meshes;
+	std::vector<MeshGeometry> meshes;
+	std::vector<MaterialAsset> materialAssets;
+	Node rootNode;
 };
+
+

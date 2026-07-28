@@ -4,6 +4,7 @@
 #include "Object3dManager.h"
 #include "PSOManager.h"
 #include "WorldTransform.h"
+#include "MaterialInstance.h"
 
 class Model;
 
@@ -53,8 +54,12 @@ public:	// 外部入出力
 		worldTransform_.translate_ = transform.translate;
 	}
 
-	void SetEnableLighting(const int32_t& enableLighting);
-	void SetColor(const Vector4& color);
+	void SetEnableLighting(const int32_t& enableLighting, const uint32_t* materialIndex = nullptr);
+	void SetColor(const Vector4& color, const uint32_t* materialIndex = nullptr);
+	void SetUVTransform(const EulerTransform& uvTransform, const uint32_t* materialIndex = nullptr);
+	void SetShininess(const float& shiniess, const uint32_t* materialIndex = nullptr);
+	void SetEnvironmentCoefficient(const float& environmentCoefficient, const uint32_t* materialIndex = nullptr);
+	void SetAlphaReference(const float alphaReference, const uint32_t* materialIndex = nullptr);
 
 	void SetParent(WorldTransform* worldTransform){ worldTransform_.parent_ = worldTransform; }
 
@@ -76,6 +81,7 @@ public:	// 外部入出力
 	const Vector4& GetColor() const { return color_; }
 	
 	Model* GetModel() const { return model_; }
+	MaterialInstance* GetMaterial(const size_t& index) const { return material_[index].get(); }
 
 private: // 静的関数
 
@@ -93,6 +99,9 @@ private:
 
 	// モデル
 	Model* model_ = nullptr;
+
+	// マテリアル
+	std::vector<std::unique_ptr<MaterialInstance>> material_;
 
 	// カメラ
 	Camera* camera_ = nullptr;

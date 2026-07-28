@@ -102,22 +102,17 @@ void SkyBox::Initialize()
 
 	PSOManager::GetInstance()->RegisterPSOConfig(psoName_, config);
 
-	modelData_ = CreateSkyBox();
+	modelData_ = std::make_unique<ModelData>(CreateSkyBox());
+	material_ = std::make_unique<MaterialInstance>();
+	material_->Initialize();
+	material_->SetMaterialAsset(modelData_->materialAssets[0]);
 
 	TextureManager::GetInstance()->LoadTexture("output_skybox.dds");
-	modelData_.meshes[0].material.textureFilePath = "output_skybox.dds";
-	// テクスチャファイル読み込み
-	TextureManager::GetInstance()->LoadTexture(modelData_.meshes[0].material.textureFilePath);
-	// 読み込んだテクスチャの番号を取得
-	modelData_.meshes[0].material.textureIndex =
-		TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData_.meshes[0].material.textureFilePath);
-
+	material_->SetTexture("output_skybox.dds");
 	
 
-	CreateIndexResource();
-	/*CreateTransformationMatrixResource();*/
 	CreateVertexResource();
-	CreateMaterialResource();
+	CreateIndexResource();
 	
 	worldTransform_.Initialize();
 	worldTransform_.scale_ = { 100.0f, 100.0f, 100.0f };
@@ -145,21 +140,12 @@ void SkyBox::Draw()
 
 	// wvp用のCBufferの場所を設定
 	worldTransform_.SetCBufferTransformationResource(1);
-	// IndexBufferViewを設定
-	DirectXBase::GetInstance()->GetCommandList()->IASetIndexBuffer(&indexBufferView);
 	// VertexBufferViewを設定
-	DirectXBase::GetInstance()->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);	// VBVを設定
+	DirectXBase::GetInstance()->GetCommandList()->IASetVertexBuffers(0, 1, &modelData_->meshes[0].vertexBufferView);	// VBVを設定
+	// IndexBufferViewを設定
+	DirectXBase::GetInstance()->GetCommandList()->IASetIndexBuffer(&modelData_->meshes[0].indexBufferView);
 	// マテリアルのCBufferの場所を設定
-	DirectXBase::GetInstance()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
-	
-	
-
-	/*TextureManager::GetInstance()->GetSRVHandleGPU(modelData_.meshes[0].material.textureFilePath);*/
-	
-	// テクスチャをセット
-	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.meshes[0].material.textureIndex);
-
-	assert(modelData_.meshes[0].material.textureIndex != 0);
+	material_->Draw(0, 2);
 
 	// 描画
 	DirectXBase::GetInstance()->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
@@ -173,93 +159,61 @@ void SkyBox::Finalize()
 
 uint32_t SkyBox::GetEnvironmentTextureIndex() const
 {
-	return modelData_.meshes[0].material.textureIndex;
+	return material_->GetTextureIndex();
 }
-
-void SkyBox::CreateIndexResource()
-{
-	// IndexBufferResourceを作成する。uint32_t 36個分のサイズを用意する
-	indexResource_ = DirectXBase::GetInstance()->CreateBufferResource(sizeof(uint32_t) * 36);
-	// IndexBufferResourceにデータを書き込むためのアドレスを取得してindexDataに割り当てる
-	indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
-
-	// インデックスデータの値を書き込む
-	indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
-	indexData_[3] = 2; indexData_[4] = 1; indexData_[5] = 3;
-
-	indexData_[6] = 4; indexData_[7] = 5; indexData_[8] = 6;
-	indexData_[9] = 6; indexData_[10] = 5; indexData_[11] = 7;
-
-	indexData_[12] = 8; indexData_[13] = 9; indexData_[14] = 10;
-	indexData_[15] = 10; indexData_[16] = 9; indexData_[17] = 11;
-
-	indexData_[18] = 12; indexData_[19] = 13; indexData_[20] = 14;
-	indexData_[21] = 14; indexData_[22] = 13; indexData_[23] = 15;
-
-	indexData_[24] = 16; indexData_[25] = 17; indexData_[26] = 18;
-	indexData_[27] = 18; indexData_[28] = 17; indexData_[29] = 19;
-
-	indexData_[30] = 20; indexData_[31] = 21; indexData_[32] = 22;
-	indexData_[33] = 22; indexData_[34] = 21; indexData_[35] = 23;
-
-	// IndexBufferViewの内容を設定する
-	indexBufferView.BufferLocation = indexResource_->GetGPUVirtualAddress();
-	indexBufferView.SizeInBytes = sizeof(uint32_t) * 36;
-	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-}
-
-//void SkyBox::CreateTransformationMatrixResource()
-//{
-//	// 座標変換行列リソースを作成する。Matrix4x4 1つ分のサイズを用意する
-//	transformationMatrixResource_ =DirectXBase::GetInstance()->CreateBufferResource(sizeof(TransformationMatrix));
-//	// TransformationMatrixResourceにデータを書き込むためのアドレスを取得してTransformationMatrixDataに割り当てる
-//	transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-//
-//	// 座標変換行列データの初期値を書き込む
-//	transformationMatrixData_->World = MakeIdentity4x4();
-//	transformationMatrixData_->WVP = MakeIdentity4x4();
-//}
 
 void SkyBox::CreateVertexResource()
 {
 	// VertexResourceを作成する。
-	vertexResource_ = DirectXBase::GetInstance()->
-		CreateBufferResource(sizeof(VertexData) * modelData_.meshes[0].vertices.size());
+	modelData_->meshes[0].vertexResource = DirectXBase::GetInstance()->
+		CreateBufferResource(sizeof(VertexData) * modelData_->meshes[0].vertices.size());
 
-	assert(vertexResource_ && "CreateBufferResource failed");
+	assert(modelData_->meshes[0].vertexResource && "CreateBufferResource failed");
 
 	// VertexBufferViewの設定
 	// リソースの先頭のアドレスから使う
-	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
+	modelData_->meshes[0].vertexBufferView.BufferLocation = modelData_->meshes[0].vertexResource->GetGPUVirtualAddress();
 	// 使用するリソースのサイズは頂点のサイズ
-	vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.meshes[0].vertices.size());
+	modelData_->meshes[0].vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData_->meshes[0].vertices.size());
 	// 1頂点当たりのサイズ
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);
+	modelData_->meshes[0].vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 	// VertexResourceにデータを書き込むためのアドレスを取得してVertexDataに割り当てる
-	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
+	modelData_->meshes[0].vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&modelData_->meshes[0].vertexData));
 	// 頂点データをコピーする
-	std::memcpy(vertexData_, modelData_.meshes[0].vertices.data(), sizeof(VertexData) * modelData_.meshes[0].vertices.size());
+	std::memcpy(modelData_->meshes[0].vertexData, modelData_->meshes[0].vertices.data(), 
+		sizeof(VertexData) * modelData_->meshes[0].vertices.size());
 }
 
-void SkyBox::CreateMaterialResource()
+
+void SkyBox::CreateIndexResource()
 {
-	// マテリアルリソースを作成する。
-	materialResource_ = DirectXBase::GetInstance()->CreateBufferResource(sizeof(Material));
-	// MaterialResourceにデータを書き込むためのアドレスを取得してMaterialDataに割り当てる
-	materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+	// IndexBufferResourceを作成する。uint32_t 36個分のサイズを用意する
+	modelData_->meshes[0].indexResource = DirectXBase::GetInstance()->CreateBufferResource(sizeof(uint32_t) * 36);
+	// IndexBufferResourceにデータを書き込むためのアドレスを取得してindexDataに割り当てる
+	modelData_->meshes[0].indexResource->Map(0, nullptr, reinterpret_cast<void**>(&modelData_->meshes[0].indexData));
 
-	// 色の書き込み
-	materialData_->color = modelData_.meshes[0].material.color;
-	materialData_->enableLighting = true;
-	materialData_->uvTransform = MakeIdentity4x4();
-	materialData_->shininess = 10.0f;
+	// IIndexBufferViewの設定
+		// リソースの先頭のアドレスから使う
+	modelData_->meshes[0].indexBufferView.BufferLocation = modelData_->meshes[0].indexResource->GetGPUVirtualAddress();
+	// 使用するリソースのサイズは頂点のサイズ
+	modelData_->meshes[0].indexBufferView.SizeInBytes = sizeof(uint32_t) * 36;
+	// 1頂点当たりのサイズ
+	modelData_->meshes[0].indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+	// IndexResourceにデータを書き込むためのアドレスを取得してVertexDataに割り当てる
+	modelData_->meshes[0].indexResource->Map(0, nullptr, reinterpret_cast<void**>(&modelData_->meshes[0].indexData));
+	// インデックスデータをコピーする
+	std::memcpy(modelData_->meshes[0].indexData, modelData_->meshes[0].indices.data(),
+		sizeof(uint32_t) * modelData_->meshes[0].indices.size());
 }
+
+
 
 ModelData SkyBox::CreateSkyBox()
 {
 	// 1. 中で必要となる変数の宣言
-	ModelData mesh; //メッシュデータ
+	ModelData modelData; //メッシュデータ
 
 
 
@@ -327,15 +281,46 @@ ModelData SkyBox::CreateSkyBox()
 		vertexData[i].normal = { 0.0f, 0.0f, 0.0f };
 	}
 
-	Mesh newMesh;
+	std::vector<uint32_t> indexData;
+	indexData.resize(36);
+	// インデックスデータの値を書き込む
+	indexData[0] = 0; indexData[1] = 1; indexData[2] = 2;
+	indexData[3] = 2; indexData[4] = 1; indexData[5] = 3;
 
+	indexData[6] = 4; indexData[7] = 5; indexData[8] = 6;
+	indexData[9] = 6; indexData[10] = 5; indexData[11] = 7;
+
+	indexData[12] = 8; indexData[13] = 9; indexData[14] = 10;
+	indexData[15] = 10; indexData[16] = 9; indexData[17] = 11;
+
+	indexData[18] = 12; indexData[19] = 13; indexData[20] = 14;
+	indexData[21] = 14; indexData[22] = 13; indexData[23] = 15;
+
+	indexData[24] = 16; indexData[25] = 17; indexData[26] = 18;
+	indexData[27] = 18; indexData[28] = 17; indexData[29] = 19;
+
+	indexData[30] = 20; indexData[31] = 21; indexData[32] = 22;
+	indexData[33] = 22; indexData[34] = 21; indexData[35] = 23;
+
+	MeshGeometry newMesh;
 	newMesh.vertices = vertexData;
+	newMesh.indices = indexData;
 
-	newMesh.material.textureFilePath = "";
-	newMesh.material.color = Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
-	newMesh.material.textureIndex = 0;
+	modelData.meshes.push_back(newMesh);
+	
+	Material newMaterial;
+	newMaterial.color = Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+	newMaterial.enableLighting = true;
+	newMaterial.shininess = 10.0f;
+	newMaterial.uvTransform = MakeIdentity4x4();
 
-	mesh.meshes.push_back(newMesh);
+	MaterialAsset newAsset;
+	newAsset.name = "skyBox";
+	newAsset.material  = newMaterial;
+	newAsset.textureFilePath = "";
+	newAsset.textureIndex = 0;
 
-	return mesh;
+	modelData.materialAssets.push_back(newAsset);
+
+	return modelData;
 }

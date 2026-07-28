@@ -160,11 +160,13 @@ void Player::Update(const float& deltaTime)
 	Vector3 worldRotate = GetWorldRotate();
 	ImGui::InputFloat3 ("WorldRotate", &worldRotate.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
 
-	float environmentCoefficient = object3d_->GetModel()->GetEnvironmentCoefficient(0);
+	/*
+
+	float environmentCoefficient = object3d_->GetEnvironmentCoefficient();
 	if (ImGui::SliderFloat("Environment Coefficient", &environmentCoefficient, 0.0f, 1.0f))
 	{
-		object3d_->GetModel()->SetEnvironmentCoefficient(environmentCoefficient, 0);
-	}
+		object3d_->SetEnvironmentCoefficient(environmentCoefficient);
+	}*/
 
 	ImGui::Text("PlayerState: %s", typeid(*state_).name());
 

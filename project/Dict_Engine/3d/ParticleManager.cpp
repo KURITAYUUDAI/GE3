@@ -236,12 +236,11 @@ void ParticleManager::Draw()
 		dxBase_->GetCommandList()->SetGraphicsRootDescriptorTable(1, 
 			srvManager_->GetGPUDescriptorHandle(particleGroup.second.instancingSrvIndex));
 
-		
-		particleGroup.second.model->SetTexture(particleGroup.second.materialData.textureFilePath, 0);
-
+	
 		// 3Dモデルが割り当てられていれば描画する
-		if (particleGroup.second.model)
+		if (particleGroup.second.model && particleGroup.second.material)
 		{
+			particleGroup.second.material->Draw(0, 2);
 			particleGroup.second.model->Draw(particleGroup.second.instanceNum);
 		}
 	}
@@ -275,15 +274,13 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 	ParticleGroup& particleGroup = particleGroups_[name];
 	particleGroup.maxInstanceNum = 30;
 	
-	// テクスチャのファイルパスを設定
-	particleGroup.materialData.textureFilePath = ResourcePath::MakeString(textureFilePath);
 	// テクスチャをロード
-	TextureManager::GetInstance()->LoadTexture(particleGroup.materialData.textureFilePath);
-	// テクスチャの内部番号を取得
-	particleGroup.materialData.textureIndex = TextureManager::GetInstance()
-		->GetTextureIndexByFilePath(particleGroup.materialData.textureFilePath);
-	// テクスチャのカラーを初期化
-	particleGroup.materialData.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	TextureManager::GetInstance()->LoadTexture(textureFilePath);
+
+	particleGroup.material = std::make_unique<MaterialInstance>();
+	particleGroup.material->Initialize();
+	particleGroup.material->SetTexture(textureFilePath);
+
 
 	// Instancing用のTransformationMatrixResourceを作成する。
 	particleGroup.instancingResource
@@ -432,6 +429,7 @@ void ParticleManager::SetModel(const std::string& name, std::string filePath)
 	}
 
 	particleGroups_[name].model = ModelManager::GetInstance()->FindModel(filePath);
+	//particleGroups_[name].material->SetMaterialAsset(particleGroups_[name].model->GetMaterialAsset(0));
 }
 
 void ParticleManager::SetIsMoveAccelerationField(const std::string& name, bool isMove)

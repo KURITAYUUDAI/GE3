@@ -85,7 +85,7 @@ tValue CalculateValue(const AnimationCurve<tValue>& aCurve, float time)
 	return aCurve.keyframes.rbegin()->value;
 }
 
-Matrix4x4 PlayAnimation(Mesh mesh, Animation& animation, float& animationTime, const float& DeltaTime);
+Matrix4x4 PlayAnimation(Node rootNode, Animation& animation, float& animationTime, const float& DeltaTime);
 
 
 struct Joint
@@ -127,43 +127,3 @@ void ImGuiDebug(Skeleton& skeleton);
 
 
 
-//struct MeshGeometry
-//{
-//	std::vector<VertexData> vertices;	//!< 頂点データ
-//	std::vector<uint32_t> indices;	//!< インデックスデータ
-//
-//	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_ = nullptr;	//<! バッファリソース
-//	VertexData* vertexData_ = nullptr;	//<! バッファポインタ
-//	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};	//<! バッファビュー
-//
-//	uint32_t materialIndex = 0;	 //!< マテリアル番号
-//};
-//
-//struct DefaultMaterial
-//{
-//	Material material;
-//
-//	std::string textureFilePath;
-//	uint32_t textureIndex = 0;
-//};
-//
-//struct MaterialInstance
-//{
-//	Material material;
-//
-//	// マテリアル用バッファリソース
-//	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
-//	// バッファリソース内のデータを指すポインタ
-//	Material* materialData_ = nullptr;
-//
-//	uint32_t textureIndex = 0;
-//};
-//struct Node
-//{
-//	QuaternionTransform transform;
-//	Matrix4x4 localMatrix;
-//	std::string name;
-//
-//	std::vector<uint32_t> meshIndices;
-//	std::vector<Node> children;
-//};

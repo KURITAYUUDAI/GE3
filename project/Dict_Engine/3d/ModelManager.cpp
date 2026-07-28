@@ -70,7 +70,7 @@ void ModelManager::CreateVoid(const std::string& name)
 	models_.insert(std::make_pair(name, std::move(model)));
 }
 
-void ModelManager::InsertMesh(const std::string& name, Mesh newMesh)
+void ModelManager::InsertMesh(const std::string& name, MeshGeometry newMesh)
 {
 	// 読み込み済みモデルを検索
 	if (models_.contains(name))

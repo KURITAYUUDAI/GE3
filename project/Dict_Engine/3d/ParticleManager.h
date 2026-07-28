@@ -6,6 +6,8 @@
 
 #include "PSOManager.h"
 
+#include "MaterialInstance.h"
+
 class Model;
 
 class Camera;
@@ -100,10 +102,11 @@ public:
 	
 	struct ParticleGroup
 	{
-		MaterialData materialData;									// マテリアルデータ
+		//MaterialData materialData;									// マテリアルデータ
 		std::list<Particle> particles;								// パーティクルリスト
 
 		Model* model;												// モデル
+		std::unique_ptr<MaterialInstance> material;					// マテリアル
 
 		uint32_t instanceNum;
 		uint32_t maxInstanceNum;									// インスタンス数

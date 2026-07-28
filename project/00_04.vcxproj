@@ -254,6 +254,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\scene\ResultScene.cpp" />
     <ClCompile Include="Dict_Engine\2d\TextManager.cpp" />
     <ClCompile Include="Dict_Engine\2d\Text.cpp" />
+    <ClCompile Include="Dict_Engine\base\MaterialInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\DebugDraw\DebugDraw.GS.hlsl">
@@ -536,6 +537,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Dict_Engine\2d\FontManager.h" />
     <ClInclude Include="Dict_Engine\2d\TextManager.h" />
     <ClInclude Include="Dict_Engine\2d\Text.h" />
+    <ClInclude Include="Dict_Engine\base\MaterialInstance.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

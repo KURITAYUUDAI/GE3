@@ -21,7 +21,7 @@ void Model::CreateResources()
 {
 	CreateVertexResource();
 	CreateIndexResource();
-	CreateMaterialResource();
+	//CreateMaterialResource();
 }
 
 void Model::Draw(const UINT& instanceCount)
@@ -37,13 +37,8 @@ void Model::Draw(const UINT& instanceCount)
 
 	for (const auto& mesh : modelData_.meshes)
 	{
-		commandList->IASetVertexBuffers(0, 1, &mesh.vertexBufferView_);	// VBVを設定
-		commandList->IASetIndexBuffer(&mesh.indexBufferView_);	// IBVを設定
-
-		// マテリアルのCBufferの場所を設定
-		commandList->SetGraphicsRootConstantBufferView(0, mesh.materialResource_->GetGPUVirtualAddress());
-
-		SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, mesh.material.textureIndex);
+		commandList->IASetVertexBuffers(0, 1, &mesh.vertexBufferView);	// VBVを設定
+		commandList->IASetIndexBuffer(&mesh.indexBufferView);	// IBVを設定
 
 		// 描画！（DrawCall/ドローコール）。
 		commandList->DrawIndexedInstanced(UINT(mesh.indices.size()), instanceCount_, 0, 0, 0);
@@ -51,61 +46,81 @@ void Model::Draw(const UINT& instanceCount)
 	}
 }
 
-MaterialData Model::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename, const std::string& mtlname)
+void Model::DrawMesh(const uint32_t meshIndex, const UINT& instanceCount)
 {
-	// 1. 中で必要となる変数の宣言
-	MaterialData materialData; // 構築するMaterialData
-	std::string line; // ファイルから読んだ1行を格納するもの
-	bool isLoad = false; // 引数で指定されたマテリアルの行に来た場合読み込む
-
-	// 2. ファイルを開く
-	std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-	assert(file.is_open()); // とりあえず開けなかったら止める
-
-	// 3. 実際にファイルを読み、MaterialDataを構築していく
-	while (std::getline(file, line))
+	if (instanceCount <= 0)
 	{
-		std::string identifier;
-		std::istringstream s(line);
-		s >> identifier; // 先頭の識別子を読む
-
-		// identifierに応じた処理
-		if (identifier == "newmtl")
-		{
-			std::string materialName;
-			s >> materialName;
-
-			// 指定されたmtlNameと同じならisLaodをtrueにする
-			if (materialName == mtlname)
-			{
-				isLoad = true;
-			} else
-			{
-				isLoad = false;
-			}
-		}
-		if (isLoad)
-		{
-			if (identifier == "map_Kd")
-			{
-				std::string textureFilename;
-				s >> textureFilename;
-				// 連結してファイルパスにする
-				materialData.textureFilePath = directoryPath + "/" + textureFilename;
-			} else if (identifier == "Kd")
-			{
-				s >> materialData.color.x >> materialData.color.y >> materialData.color.z;
-				materialData.color.w = 1.0f;
-			}
-		}
+		return;
 	}
 
-	// 4. MaterialDataを返す
+	instanceCount_ = instanceCount;
 
+	ID3D12GraphicsCommandList* commandList = DirectXBase::GetInstance()->GetCommandList();
 
+	const auto& mesh = modelData_.meshes[meshIndex];
 
-	return materialData;
+	commandList->IASetVertexBuffers(0, 1, &mesh.vertexBufferView);	// VBVを設定
+	commandList->IASetIndexBuffer(&mesh.indexBufferView);	// IBVを設定
+
+	// 描画！（DrawCall/ドローコール）。
+	commandList->DrawIndexedInstanced(UINT(mesh.indices.size()), instanceCount_, 0, 0, 0);
 }
+
+//Material Model::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename, const std::string& mtlname)
+//{
+//	// 1. 中で必要となる変数の宣言
+//	Material materialData; // 構築するMaterialData
+//	std::string line; // ファイルから読んだ1行を格納するもの
+//	bool isLoad = false; // 引数で指定されたマテリアルの行に来た場合読み込む
+//
+//	// 2. ファイルを開く
+//	std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+//	assert(file.is_open()); // とりあえず開けなかったら止める
+//
+//	// 3. 実際にファイルを読み、MaterialDataを構築していく
+//	while (std::getline(file, line))
+//	{
+//		std::string identifier;
+//		std::istringstream s(line);
+//		s >> identifier; // 先頭の識別子を読む
+//
+//		// identifierに応じた処理
+//		if (identifier == "newmtl")
+//		{
+//			std::string materialName;
+//			s >> materialName;
+//
+//			// 指定されたmtlNameと同じならisLaodをtrueにする
+//			if (materialName == mtlname)
+//			{
+//				isLoad = true;
+//			} else
+//			{
+//				isLoad = false;
+//			}
+//		}
+//		if (isLoad)
+//		{
+//			if (identifier == "map_Kd")
+//			{
+//				std::string textureFilename;
+//				s >> textureFilename;
+//				// 連結してファイルパスにする
+//				materialData.textureFilePath = directoryPath + "/" + textureFilename;
+//			} else if (identifier == "Kd")
+//			{
+//				s >> materialData.color.x >> materialData.color.y >> materialData.color.z;
+//				materialData.color.w = 1.0f;
+//			}
+//		}
+//	}
+//
+//	// 4. MaterialDataを返す
+//
+//
+//
+//	return materialData;
+//}
 
 void Model::LoadModelFile(const std::string& directoryPath, const std::string& filename)
 {
@@ -116,20 +131,91 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 	const aiScene* scene = importer.ReadFile(fullPath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
 	assert(scene->HasMeshes());
 
-	//// OBJファイルのあるサブディレクトリを求める
-	//std::string objDirectory = directoryPath;
-	//size_t slashPos = filename.find_last_of("/\\");
-	//if (slashPos != std::string::npos)
-	//{
-	//	objDirectory = directoryPath + "/" + filename.substr(0, slashPos);
-	//}
+	modelData_.meshes.clear();
+	modelData_.materialAssets.clear();
+
+	// 先にすべてのマテリアルを読み込む
+	modelData_.materialAssets.reserve(scene->mNumMaterials);
+
+	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex)
+	{
+		aiMaterial* aiMaterialData = scene->mMaterials[materialIndex];
+
+		MaterialAsset materialAsset{};
+
+		// マテリアル名
+		aiString materialName;
+
+		if (aiMaterialData->Get(AI_MATKEY_NAME, materialName) == AI_SUCCESS)
+		{
+			materialAsset.name = materialName.C_Str();
+		}
+
+		// Materialの初期値
+		materialAsset.material.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+		materialAsset.material.enableLighting = true;
+		materialAsset.material.shininess = 10.0f;
+		materialAsset.material.environmentCoefficient = 1.0f;
+		materialAsset.material.alphaReference = 0.0f;
+		materialAsset.material.uvTransform = MakeIdentity4x4();
+
+		// マテリアルカラー
+		aiColor4D materialColor{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+		if (aiMaterialData->Get(AI_MATKEY_BASE_COLOR, materialColor) == AI_SUCCESS ||
+			aiMaterialData->Get(AI_MATKEY_COLOR_DIFFUSE, materialColor) == AI_SUCCESS)
+		{
+			materialAsset.material.color = 
+				{ materialColor.r, materialColor.g, materialColor.b, materialColor.a };
+		}
+
+		// 使用するテクスチャ種別を決定
+		aiTextureType textureType = aiTextureType_NONE;
+
+		if (aiMaterialData->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
+		{
+			textureType = aiTextureType_BASE_COLOR;
+		} 
+		else if (aiMaterialData->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+		{
+			textureType = aiTextureType_DIFFUSE;
+		}
+
+		// テクスチャがない場合は白テクスチャ
+		std::filesystem::path texturePath = "white1x1.png";
+
+		if (textureType != aiTextureType_NONE)
+		{
+			aiString assimpTexturePath;
+
+			if (aiMaterialData->GetTexture(
+				textureType,
+				0,
+				&assimpTexturePath) == AI_SUCCESS)
+			{
+				texturePath =
+					std::filesystem::path(directoryPath) /
+					std::filesystem::path(assimpTexturePath.C_Str());
+			}
+		}
+
+		materialAsset.textureFilePath = texturePath.lexically_normal().generic_string();
+
+		TextureManager::GetInstance()->LoadTexture(materialAsset.textureFilePath);
+
+		materialAsset.textureIndex = TextureManager::GetInstance()->
+			GetTextureIndexByFilePath(materialAsset.textureFilePath);
+
+		modelData_.materialAssets.push_back(std::move(materialAsset));
+	}
 
 	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
 	{
 		aiMesh* mesh = scene->mMeshes[meshIndex]; 
 		assert(mesh->HasNormals()); // 法線がないMeshは今回は非対応
 		assert(mesh->HasTextureCoords(0)); // TexcoordがないMeshは今回は非対応
-		Mesh newMesh;
+		MeshGeometry newMesh;
 
 		newMesh.vertices.resize(mesh->mNumVertices);	// 最初に頂点数分のメモリを確保しておく
 		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
@@ -157,258 +243,42 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 				newMesh.indices.push_back(vertexIndex);
 			}
 		}
+		assert(mesh->mMaterialIndex < modelData_.materialAssets.size());
 
-		newMesh.rootNode = ReadNode(scene->mRootNode);
-
-		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		aiColor4D materialColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-		if (AI_SUCCESS == material->Get(AI_MATKEY_BASE_COLOR, materialColor) ||
-			AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, materialColor))
-		{
-			newMesh.material.color.x = materialColor.r;
-			newMesh.material.color.y = materialColor.g;
-			newMesh.material.color.z = materialColor.b;
-			newMesh.material.color.w = materialColor.a;
-		}
-		else
-		{
-			// 色が取得できなかった場合
-			newMesh.material.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		}
-
-		aiTextureType textureType = aiTextureType_NONE;
-
-		if (material->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
-		{
-			textureType = aiTextureType_BASE_COLOR;
-		}
-		else if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
-		{
-			textureType = aiTextureType_DIFFUSE;
-		}
-
-		std::filesystem::path texturePath = "white1x1.png";
-
-		if (textureType != aiTextureType_NONE)
-		{
-			aiString textureFilePath;
-
-			if (material->GetTexture(
-			textureType, 0, &textureFilePath) == AI_SUCCESS)
-			{
-				texturePath =
-					std::filesystem::path(directoryPath) /
-					std::filesystem::path(textureFilePath.C_Str());
-			}
-		}
-
-		newMesh.material.textureFilePath =
-		texturePath.lexically_normal().generic_string();
-		
-		TextureManager::GetInstance()->LoadTexture(
-		newMesh.material.textureFilePath);
-		
-		newMesh.material.textureIndex =
-		TextureManager::GetInstance()->GetTextureIndexByFilePath(
-		newMesh.material.textureFilePath);
-		
-		materialTextureIndex_ = newMesh.material.textureIndex;
-
-		//if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0)
-		//{
-		//	aiString textureFilePath;
-		//	material->GetTexture(aiTextureType_DIFFUSE, 0, &textureFilePath);
-		//	newMesh.material.textureFilePath = directoryPath + "/" + textureFilePath.C_Str();
-
-		//	// .objの参照しているテクスチャファイル読み込み
-		//	TextureManager::GetInstance()->LoadTexture(newMesh.material.textureFilePath);
-		//	// 読み込んだテクスチャの番号を取得
-		//	newMesh.material.textureIndex =
-		//		TextureManager::GetInstance()->GetTextureIndexByFilePath(newMesh.material.textureFilePath);
-		//	materialTextureIndex_ = newMesh.material.textureIndex;
-		//}
+		newMesh.materialIndex = mesh->mMaterialIndex;
 
 		modelData_.meshes.push_back(newMesh);
-
 	}
 
-	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex)
-	{
-		
-	}
-	
-
-	//
-	//// 1. 中で必要となる変数の宣言
-	//ModelData mesh; //メッシュデータ
-	//std::string materialFilename; // mtllibから取得したmtlファイル名
-	//std::vector<Vector4> positions; // 位置
-	//std::vector<Vector3> normals; // 法線
-	//std::vector<Vector2> texcoords; // テクスチャ座標
-	//std::string line; // ファイルから読んだ1行を格納するもの
-
-	//// 2. ファイルを開く
-	//std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-	//assert(file.is_open()); // とりあえず開けなかったら止める
-
-	//// 3. 実際にファイルを読み、ModelDataを構築していく
-	//while (std::getline(file, line))
-	//{
-	//	std::string identifier;
-	//	std::istringstream s(line);
-	//	s >> identifier; // 先頭の識別子を読む
-
-	//	// identifierに応じた処理
-	//	////if (identifier == "o")
-	//	////{
-	//	////	// これまでのcurrentMeshを保存し、新しいcurrentMeshを初期化する
-	//	////	if (!mesh.vertices.empty() || !mesh.material.textureFilePath.empty())
-	//	////	{
-	//	////		meshes.push_back(mesh);
-	//	////	}
-	//	////	mesh = ModelData(); // 新しいメッシュデータを初期化
-	//	////} else 
-	//	if (identifier == "v")
-	//	{
-	//		Vector4 position;
-	//		s >> position.x >> position.y >> position.z;
-
-	//		// ===== [テキストより独自で変換したポイント] =======
-	//		// position.x → position.z
-	//		//                                         by ChatGPT
-	//		// ==================================================
-
-
-	//		position.x *= -1.0f;
-	//		position.w = 1.0f;
-	//		positions.push_back(position);
-	//	} 
-	//	else if (identifier == "vt")
-	//	{
-	//		Vector2 texcoord;
-	//		s >> texcoord.x >> texcoord.y;
-
-	//		texcoord.y = 1.0f - texcoord.y;
-	//		texcoords.push_back(texcoord);
-	//	} 
-	//	else if (identifier == "vn")
-	//	{
-	//		Vector3 normal;
-	//		s >> normal.x >> normal.y >> normal.z;
-
-	//		// ===== [テキストより独自で変換したポイント] =======
-	//		// normal.x → normal.z
-	//		//                                         by ChatGPT
-	//		// ==================================================
-
-
-	//		normal.x *= -1.0f;
-	//		normals.push_back(normal);
-	//	} 
-	//	else if (identifier == "f")
-	//	{
-	//		VertexData triangle[3];
-	//		// 面は三角形限定。その他は未対応
-	//		for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex)
-	//		{
-	//			std::string vertexDefintion;
-	//			s >> vertexDefintion;
-	//			// 頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分解してIndexを取得する
-	//			std::istringstream v(vertexDefintion);
-	//			uint32_t elementIndices[3];
-	//			for (int32_t element = 0; element < 3; ++element)
-	//			{
-	//				std::string index;
-	//				std::getline(v, index, '/');	// 区切りでインデックスを読んでいく
-	//				elementIndices[element] = std::stoi(index);
-	//			}
-	//			// 要素へのIndexから、実際の要素の値を取得して頂点を構築する
-	//			Vector4 position = positions[elementIndices[0] - 1];
-	//			Vector2 texcoord = texcoords[elementIndices[1] - 1];
-	//			Vector3 normal = normals[elementIndices[2] - 1];
-
-	//			/*VertexData vertex = { position, texcoord, normal };
-	//			modelData.vertices.push_back(vertex);*/
-	//			triangle[faceVertex] = { position, texcoord, normal };
-	//		}
-	//		// 頂点を逆順で登録することで、周り順を逆にする
-	//		mesh.vertices.push_back(triangle[2]);
-	//		mesh.vertices.push_back(triangle[1]);
-	//		mesh.vertices.push_back(triangle[0]);
-
-	//	} else if (identifier == "mtllib")
-	//	{
-	//		// materialTemplateLibraryのファイルの名前を取得する
-
-	//		s >> materialFilename;
-
-	//	} 
-	//	else if (identifier == "usemtl")
-	//	{
-	//		// usemtlから使用するMaterial名を取得する
-	//		std::string materialName;
-	//		s >> materialName;
-
-	//		// 基本的にobjファイルと同一階層にmtlファイルは存在させるので、ディレクトリ名とファイル名を渡す
-	//		mesh.material = LoadMaterialTemplateFile(directoryPath, materialFilename, materialName);
-	//	}
-
-	//}
-
-	////// 最後に残った currentMesh を押し込む
-	////if (!mesh.vertices.empty() || !mesh.material.textureFilePath.empty())
-	////{
-	////	meshes.push_back(mesh);
-	////}
-
-	////// 4. ModelDataを返す
-
-	////if (!mesh.vertices.empty() || !mesh.material.textureFilePath.empty()) {
-	////	meshes.push_back(mesh);
-	////}
-
-	//materialTextureFilePath_ = mesh.material.textureFilePath;
-
-	//modelData_ = mesh;
-
-	//// .objの参照しているテクスチャファイル読み込み
-	//TextureManager::GetInstance()->LoadTexture(modelData_.material.textureFilePath);
-	//// 読み込んだテクスチャの番号を取得
-	//modelData_.material.textureIndex =
-	//	TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData_.material.textureFilePath);
-	//materialTextureIndex_ = modelData_.material.textureIndex;
-
-	
+	modelData_.rootNode = ReadNode(scene->mRootNode);
 }
 
-void Model::InsertMesh(Mesh mesh)
+void Model::InsertMesh(MeshGeometry mesh)
 {
 	modelData_.meshes.clear();
-
-
-
+	
 	modelData_.meshes.push_back(mesh);
+
+	MaterialAsset defaultAsset{};
+
+	defaultAsset.name = "Default";
+	defaultAsset.material.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	defaultAsset.material.enableLighting = true;
+	defaultAsset.material.alphaReference = 0.0f;
+	defaultAsset.material.uvTransform = MakeIdentity4x4();
+	defaultAsset.textureFilePath = "white1x1.png";
+
+	TextureManager::GetInstance()->LoadTexture(defaultAsset.textureFilePath);
+
+	defaultAsset.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(
+			defaultAsset.textureFilePath);
+
+	modelData_.materialAssets.push_back(std::move(defaultAsset));
 
 	CreateVertexResource();
 
 
-}
-
-void Model::SetTexture(const std::string& directoryFilePath, uint32_t meshIndex)
-{
-	modelData_.meshes[meshIndex].material.textureFilePath = directoryFilePath;
-	// テクスチャファイル読み込み
-	TextureManager::GetInstance()->LoadTexture(modelData_.meshes[meshIndex].material.textureFilePath);
-	// 読み込んだテクスチャの番号を取得
-	modelData_.meshes[meshIndex].material.textureIndex =
-		TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData_.meshes[meshIndex].material.textureFilePath);
-}
-
-void Model::ResetTexture(uint32_t meshIndex)
-{
-	modelData_.meshes[meshIndex].material.textureFilePath = materialTextureFilePath_;
-	modelData_.meshes[meshIndex].material.textureIndex = materialTextureIndex_;
 }
 
 Node Model::ReadNode(aiNode* node)
@@ -450,27 +320,27 @@ void Model::CreateVertexResource()
 {
 	for (uint32_t meshIndex = 0; meshIndex < modelData_.meshes.size(); ++meshIndex)
 	{
-		Mesh& mesh = modelData_.meshes[meshIndex];
+		MeshGeometry& mesh = modelData_.meshes[meshIndex];
 
 		// VertexResourceを作成する。
-		mesh.vertexResource_ = modelManager_->GetDxBase()->
+		mesh.vertexResource = modelManager_->GetDxBase()->
 			CreateBufferResource(sizeof(VertexData) * modelData_.meshes[meshIndex].vertices.size());
 
-		assert(mesh.vertexResource_ && "CreateBufferResource failed");
+		assert(mesh.vertexResource && "CreateBufferResource failed");
 
 		// VertexBufferViewの設定
 		// リソースの先頭のアドレスから使う
-		mesh.vertexBufferView_.BufferLocation = mesh.vertexResource_->GetGPUVirtualAddress();
+		mesh.vertexBufferView.BufferLocation = mesh.vertexResource->GetGPUVirtualAddress();
 		// 使用するリソースのサイズは頂点のサイズ
-		mesh.vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) 
+		mesh.vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) 
 			* modelData_.meshes[meshIndex].vertices.size());
 		// 1頂点当たりのサイズ
-		mesh.vertexBufferView_.StrideInBytes = sizeof(VertexData);
+		mesh.vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 		// VertexResourceにデータを書き込むためのアドレスを取得してVertexDataに割り当てる
-		mesh.vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mesh.vertexData_));
+		mesh.vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&mesh.vertexData));
 		// 頂点データをコピーする
-		std::memcpy(mesh.vertexData_, modelData_.meshes[meshIndex].vertices.data(), 
+		std::memcpy(mesh.vertexData, modelData_.meshes[meshIndex].vertices.data(), 
 			sizeof(VertexData) * modelData_.meshes[meshIndex].vertices.size());
 	}
 }
@@ -479,57 +349,46 @@ void Model::CreateIndexResource()
 {
 	for (uint32_t meshIndex = 0; meshIndex < modelData_.meshes.size(); ++meshIndex)
 	{
-		Mesh& mesh = modelData_.meshes[meshIndex];
+		MeshGeometry& mesh = modelData_.meshes[meshIndex];
 
 		// IndexResourceを作成する。
-		mesh.indexResource_ = modelManager_->GetDxBase()->
+		mesh.indexResource = modelManager_->GetDxBase()->
 			CreateBufferResource(sizeof(uint32_t) * modelData_.meshes[meshIndex].indices.size());
 
-		assert(mesh.indexResource_ && "CreateBufferResource failed");
+		assert(mesh.indexResource && "CreateBufferResource failed");
 
 		// IIndexBufferViewの設定
 		// リソースの先頭のアドレスから使う
-		mesh.indexBufferView_.BufferLocation = mesh.indexResource_->GetGPUVirtualAddress();
+		mesh.indexBufferView.BufferLocation = mesh.indexResource->GetGPUVirtualAddress();
 		// 使用するリソースのサイズは頂点のサイズ
-		mesh.indexBufferView_.SizeInBytes = UINT(sizeof(uint32_t) * modelData_.meshes[meshIndex].indices.size());
+		mesh.indexBufferView.SizeInBytes = UINT(sizeof(uint32_t) * modelData_.meshes[meshIndex].indices.size());
 		// 1頂点当たりのサイズ
-		mesh.indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+		mesh.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
 		// IndexResourceにデータを書き込むためのアドレスを取得してVertexDataに割り当てる
-		mesh.indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mesh.indexData_));
+		mesh.indexResource->Map(0, nullptr, reinterpret_cast<void**>(&mesh.indexData));
 		// インデックスデータをコピーする
-		std::memcpy(mesh.indexData_, modelData_.meshes[meshIndex].indices.data(),
+		std::memcpy(mesh.indexData, modelData_.meshes[meshIndex].indices.data(),
 			sizeof(uint32_t) * modelData_.meshes[meshIndex].indices.size());
 	}
 }
 
-void Model::CreateMaterialResource()
-{
-	for (uint32_t meshIndex = 0; meshIndex < modelData_.meshes.size(); ++meshIndex)
-	{
-		Mesh& mesh = modelData_.meshes[meshIndex];
+//void Model::CreateMaterialResource()
+//{
+//	for (uint32_t meshIndex = 0; meshIndex < modelData_.meshes.size(); ++meshIndex)
+//	{
+//		MaterialHelper::CreateMaterialResource()
+//
+//		// 色の書き込み
+//		mesh.materialData_->color = modelData_.meshes[meshIndex].material.color;
+//		mesh.materialData_->enableLighting = true;
+//		mesh.materialData_->uvTransform = MakeIdentity4x4();
+//		mesh.materialData_->shininess = 10.0f;
+//		mesh.materialData_->environmentCoefficient = 1.0f;
+//		mesh.materialData_->alphaReference = modelData_.meshes[meshIndex].material.alphaReference;
+//	}
+//}
 
-		// マテリアルリソースを作成する。
-		mesh.materialResource_ = modelManager_->GetDxBase()->CreateBufferResource(sizeof(Material));
-		// MaterialResourceにデータを書き込むためのアドレスを取得してMaterialDataに割り当てる
-		mesh.materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&mesh.materialData_));
-
-		// 色の書き込み
-		mesh.materialData_->color = modelData_.meshes[meshIndex].material.color;
-		mesh.materialData_->enableLighting = true;
-		mesh.materialData_->uvTransform = MakeIdentity4x4();
-		mesh.materialData_->shininess = 10.0f;
-		mesh.materialData_->environmentCoefficient = 1.0f;
-		mesh.materialData_->alphaReference = modelData_.meshes[meshIndex].material.alphaReference;
-	}
-}
-
-void Model::SetUVTransform(const EulerTransform& uvTransform, uint32_t meshIndex)
-{
-	Matrix4x4 uvTransformMatrix = MakeAffineMatrix(uvTransform.scale, uvTransform.rotate, uvTransform.translate);
-
-	modelData_.meshes[meshIndex].materialData_->uvTransform = uvTransformMatrix;
-}
 
 void Model::CreateSphere()
 {

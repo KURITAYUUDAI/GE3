@@ -60,7 +60,7 @@ public:
 	/// <returns>モデル</returns>
 	Model* FindModel(const std::string& filename);
 
-	void InsertMesh(const std::string& name, Mesh newMesh);
+	void InsertMesh(const std::string& name, MeshGeometry newMesh);
 
 	void CreateSphere(const std::string& materialPath);
 

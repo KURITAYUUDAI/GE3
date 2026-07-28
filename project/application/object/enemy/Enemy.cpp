@@ -23,7 +23,7 @@ void Enemy::Initialize()
 	object3d_ = std::make_unique<Object3d>();
 	object3d_->Initialize();
 	object3d_->SetModel("sphere.obj");
-	object3d_->GetModel()->SetEnvironmentCoefficient(0.2f, 0);
+	object3d_->SetEnvironmentCoefficient(0.2f);
 
 	collider_ = std::make_unique<Collider>();
 	collider_->SetOwner(this);
@@ -34,7 +34,7 @@ void Enemy::Initialize()
 	objectRightHand_ = std::make_unique<Object3d>();
 	objectRightHand_->Initialize();
 	objectRightHand_->SetModel("RightHand.obj");
-	objectRightHand_->GetModel()->SetEnvironmentCoefficient(0.2f, 0);
+	objectRightHand_->SetEnvironmentCoefficient(0.2f);
 	objectRightHand_->SetParent(object3d_->GetWorldTransform());
 
 	colliderAttack_ = std::make_unique<Collider>();

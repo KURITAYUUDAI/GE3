@@ -37,7 +37,7 @@ void PrimitiveManager::CreateRing(const std::string& name, const RingConfig& con
 	const float angleRenge = config.endAngle - config.startAngle;
 	const float radianPerDivide = angleRenge / float(segments);
 
-	Mesh mesh;
+	MeshGeometry mesh;
 
 	mesh.vertices.reserve((segments + 1) * 2);
 	mesh.indices.reserve(segments * 6);
@@ -119,10 +119,10 @@ void PrimitiveManager::CreateRing(const std::string& name, const RingConfig& con
 			});
 	}
 
-	mesh.material.textureFilePath = "";
+	/*mesh.material.textureFilePath = "";
 	mesh.material.color = Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
 	mesh.material.textureIndex = 0;
-	mesh.material.alphaReference = 0.0f;
+	mesh.material.alphaReference = 0.0f;*/
 
 	ModelManager::GetInstance()->InsertMesh(name, mesh);
 }
@@ -134,7 +134,7 @@ void PrimitiveManager::CreateCylinder(const std::string& name, const CylinderCon
 		return;
 	}
 
-	Mesh mesh;
+	MeshGeometry mesh;
 
 	const uint32_t segments = config.segments;
 	const uint32_t stacks = config.stacks;
@@ -246,10 +246,10 @@ void PrimitiveManager::CreateCylinder(const std::string& name, const CylinderCon
 		}
 	}
 
-	mesh.material.textureFilePath = "";
+	/*mesh.material.textureFilePath = "";
 	mesh.material.color = Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
 	mesh.material.textureIndex = 0;
-	mesh.material.alphaReference = 0.0f;
+	mesh.material.alphaReference = 0.0f;*/
 
 	ModelManager::GetInstance()->InsertMesh(name, mesh);
 }

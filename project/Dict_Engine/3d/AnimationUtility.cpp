@@ -62,9 +62,9 @@ Animation LoadAnimationFile(const std::string& directoryPath, const std::string&
 	return animation;
 }
 
-Matrix4x4 PlayAnimation(Mesh mesh, Animation& animation, float& animationTime, const float& DeltaTime)
+Matrix4x4 PlayAnimation(Node rootNode, Animation& animation, float& animationTime, const float& DeltaTime)
 {
-	NodeAnimation& rootNodeAnimation = animation.nodeAnimations[mesh.rootNode.name];
+	NodeAnimation& rootNodeAnimation = animation.nodeAnimations[rootNode.name];
 	Vector3	translate = CalculateValue<Vector3>(rootNodeAnimation.translate, animationTime);
 	Quaternion rotate = CalculateValue<Quaternion>(rootNodeAnimation.rotate, animationTime);
 	Vector3		scale = CalculateValue<Vector3>(rootNodeAnimation.scale, animationTime);

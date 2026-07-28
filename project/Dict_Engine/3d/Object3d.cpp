@@ -20,6 +20,10 @@ void Object3d::Initialize()
 	worldTransform_.SetRotate({0.0f, pi, 0.0f}); 
 	worldTransform_.translate_ = {0.0f, 0.0f, 0.0f} ;
 
+	/*std::unique_ptr<MaterialInstance> material = std::make_unique<MaterialInstance>();
+	material->Initialize();
+	material_.push_back(std::move(material));*/
+
 	psoName_ = Object3dManager::GetInstance()->GetDefaultPsoName();
 	
 }
@@ -78,8 +82,6 @@ void Object3d::Draw()
 	// wvp用のCBufferの場所を設定
 	worldTransform_.SetCBufferTransformationResource(1);
 	
-	//DirectXBase::GetInstance()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
-
 	// 平行光源用のCBufferをバインド（rootParameter[3] = b1）
 	LightManager::GetInstance()->SetCBufferLightsResource(3);
 
@@ -89,7 +91,12 @@ void Object3d::Draw()
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_)
 	{
-		model_->Draw(1);
+		for (size_t index = 0; index < model_->GetMeshCount(); ++index)
+		{
+			// マテリアルとSRVをバインド
+			material_[model_->GetMesh(index).materialIndex]->Draw(0, 2);
+			model_->DrawMesh(index, 1);
+		}
 	}
 
 }
@@ -102,24 +109,136 @@ void Object3d::Finalize()
 void Object3d::SetModel(const std::string& filePath)
 {
 	model_ = ModelManager::GetInstance()->FindModel(filePath);
-	enableLighting_ = model_->GetEnableLighting(0);
-}
-
-void Object3d::SetEnableLighting(const int32_t& enableLighting)
-{
-	enableLighting_ = enableLighting;
-	if (model_)
+	material_.clear();
+	material_.resize(model_->GetMaterialAssetsCount());
+	for (size_t index = 0; index < model_->GetMaterialAssetsCount(); ++index)
 	{
-		model_->SetEnableLighting(enableLighting_, 0);
+		std::unique_ptr<MaterialInstance> material = std::make_unique<MaterialInstance>();
+		material->Initialize();
+		material->SetMaterialAsset(model_->GetMaterialAsset(index));
+		material_[index] = std::move(material);
 	}
 }
 
-void Object3d::SetColor(const Vector4& color)
+void Object3d::SetEnableLighting(const int32_t& enableLighting, const uint32_t* materialIndex)
 {
-	color_ = color;
-	if (model_)
+	if (material_.size() == 0)
 	{
-		model_->SetColor(color_, 0);
+		return;
+	}
+
+	enableLighting_ = enableLighting;
+	if (materialIndex != nullptr)
+	{
+		material_[*materialIndex]->SetEnableLighting(enableLighting_);
+	}
+	else
+	{
+		for (auto& material : material_)
+		{
+			material->SetEnableLighting(enableLighting_);
+		}
+	}
+}
+
+void Object3d::SetColor(const Vector4& color, const uint32_t* materialIndex)
+{
+	if (material_.size() == 0)
+	{
+		return;
+	}
+
+	color_ = color;
+	if (materialIndex != nullptr)
+	{
+		material_[*materialIndex]->SetColor(color_);
+	} 
+	else
+	{
+		for (auto& material : material_)
+		{
+			material->SetColor(color_);
+		}
+	}
+}
+
+void Object3d::SetUVTransform(const EulerTransform& uvTransform, const uint32_t* materialIndex)
+{
+	if (material_.size() == 0)
+	{
+		return;
+	}
+
+	if (materialIndex != nullptr)
+	{
+		material_[*materialIndex]->SetUVTransform(uvTransform);
+	} 
+	else
+	{
+		for (auto& material : material_)
+		{
+			material->SetUVTransform(uvTransform);
+		}
+	}
+}
+
+void Object3d::SetShininess(const float& shininess, const uint32_t * materialIndex)
+{
+	if (material_.size() == 0)
+	{
+		return;
+	}
+
+	if (materialIndex != nullptr)
+	{
+		material_[*materialIndex]->SetShininess(shininess);
+	} 
+	else
+	{
+		for (auto& material : material_)
+		{
+			material->SetShininess(shininess);
+		}
+	}
+}
+
+void Object3d::SetEnvironmentCoefficient(const float& environmentCoefficient, const uint32_t * materialIndex)
+{
+	if (material_.size() == 0)
+	{
+		return;
+	}
+
+	if (materialIndex != nullptr)
+	{
+		material_[*materialIndex]->SetEnvironmentCoefficient(environmentCoefficient);
+	} 
+	else
+	{
+		for (auto& material : material_)
+		{
+			material->SetEnvironmentCoefficient(environmentCoefficient);
+		}
+	}
+}
+
+void Object3d::SetAlphaReference(const float alphaReference, const uint32_t * materialIndex)
+{
+	if (material_.size() == 0)
+	{
+		return;
+	}
+
+	if (materialIndex != nullptr)
+	{
+		material_[*materialIndex]->SetAlphaReference(alphaReference);
+	} 
+	else
+	{
+		for (auto& material : material_)
+		{
+			material->SetAlphaReference(alphaReference);
+		}
 	}
 }
 

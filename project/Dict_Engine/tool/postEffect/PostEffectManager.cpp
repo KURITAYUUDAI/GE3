@@ -62,12 +62,13 @@ void PostEffectManager::Clear()
 
 	for (auto& chainEffect : effectChain_)
 	{
-		chainEffect->Finalize();
+		chainEffect.effect->Finalize();
 	}
     effectChain_.clear();
 }
 
-PostEffect* PostEffectManager::Add(const std::string& name)
+PostEffect* PostEffectManager::Add(const std::string& name, 
+    std::optional<int32_t> priority)
 {
     auto it = factories_.find(name);
     assert(it != factories_.end()
@@ -79,7 +80,14 @@ PostEffect* PostEffectManager::Add(const std::string& name)
     effect->Initialize(width_, height_);
 
     PostEffect* raw = effect.get();
-    effectChain_.push_back(std::move(effect));
+
+    EffectEntry entry;
+    entry.priority = priority.value_or(effect->GetDefaultPriority());
+    entry.effect = std::move(effect);
+    entry.insertionOrder = nextInsertionOrder_++;
+    effectChain_.push_back(std::move(entry));
+
+    SortEffectChain();
 
 #ifdef _DEBUG
     // Add の最後に
@@ -92,21 +100,21 @@ PostEffect* PostEffectManager::Add(const std::string& name)
 void PostEffectManager::Remove(uint32_t index)
 {
     assert(index < effectChain_.size() && "PostEffectManager: Remove インデックスが範囲外です");
-    effectChain_[index]->Finalize();
+    effectChain_[index].effect->Finalize();
     effectChain_.erase(effectChain_.begin() + index);
 }
 
 void PostEffectManager::Remove(const std::string& name)
 {
    auto it =  std::find_if(effectChain_.begin(), effectChain_.end(), 
-       [&name](const std::unique_ptr<PostEffect>& effect){
-            return effect->GetName() == name;
+       [&name](const EffectEntry& entry){
+            return entry.effect->GetName() == name;
        });
 
    // 見つかった場合は削除
    if (it != effectChain_.end())
    {
-       (*it)->Finalize(); // エフェクト側の終了処理を呼び出す
+       it->effect->Finalize(); // エフェクト側の終了処理を呼び出す
        effectChain_.erase(it);
    } 
    else
@@ -134,14 +142,14 @@ void PostEffectManager::Remove(PostEffect* target)
         std::remove_if(
             effectChain_.begin(),
             effectChain_.end(),
-            [target](std::unique_ptr<PostEffect>& effect){
-                if (effect.get() == target)
+            [target](EffectEntry& entry){
+                if (entry.effect.get() != target)
                 {
-                    effect->Finalize();
-                    return true;
+                    return false;
                 }
 
-                return false;
+                entry.effect->Finalize();
+                return true;
             }),
         effectChain_.end());
 }
@@ -155,9 +163,9 @@ void PostEffectManager::Swap(uint32_t indexA, uint32_t indexB)
 
 bool PostEffectManager::HasEffect(const PostEffect* target) const
 {
-    for (const auto& e : effectChain_)
+    for (const auto& entry : effectChain_)
     {
-        if (e.get() == target) return true;
+        if (entry.effect.get() == target) return true;
     }
     return false;
 }
@@ -167,7 +175,7 @@ void PostEffectManager::DebugPrintChain() const
     Logger::Log("PostEffectManager: effectChain start\n");
     for (size_t i = 0; i < effectChain_.size(); ++i)
     {
-        auto* p = effectChain_[i].get();
+        auto p = effectChain_[i].effect.get();
         Logger::Log("  idx=" + std::to_string(i) + " ptr=" +
             std::to_string(reinterpret_cast<uintptr_t>(p)) + " name=" + p->GetName() + "\n");
     }
@@ -200,10 +208,10 @@ void PostEffectManager::Draw(ID3D12Resource* srcResource, uint32_t srcSRVIndex)
 
 
     std::vector<PassEntry> allEntries;
-    for (auto& effect : effectChain_)
+    for (auto& effectEntry : effectChain_)
     {
-        auto passes = effect->GetPasses();
-		auto barriers = effect->GetBarriers();
+        auto passes = effectEntry.effect->GetPasses();
+		auto barriers = effectEntry.effect->GetBarriers();
 
         for (size_t i = 0; i < passes.size(); ++i)
         { 
@@ -271,7 +279,36 @@ void PostEffectManager::Draw(ID3D12Resource* srcResource, uint32_t srcSRVIndex)
 const std::string& PostEffectManager::GetEffectName(uint32_t index) const
 {
     assert(index < effectChain_.size() && "PostEffectManager: GetEffectName インデックスが範囲外です");
-    return effectChain_[index]->GetName();
+    return effectChain_[index].effect->GetName();
+}
+
+bool PostEffectManager::SetPriority(PostEffect* target, const int32_t& priority)
+{
+    for (auto& entry : effectChain_)
+    {
+        if (entry.effect.get() == target) 
+        {
+            entry.priority = priority;
+            SortEffectChain();
+            return true;
+        }
+    }
+
+    return false;
+}   
+
+void PostEffectManager::SortEffectChain()
+{
+    std::stable_sort(
+    effectChain_.begin(),
+    effectChain_.end(),
+    [](const EffectEntry& a, const EffectEntry& b){
+        if (a.priority != b.priority)
+        {
+            return a.priority < b.priority;
+        }
+        return a.insertionOrder < b.insertionOrder;
+    });
 }
 
 // ---------------------------------------------------------------

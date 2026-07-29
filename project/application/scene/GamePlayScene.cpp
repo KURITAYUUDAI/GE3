@@ -9,6 +9,7 @@
 #include "Dissolve.h"
 #include "Random.h"
 #include "Bloom.h"
+#include "Grayscale.h"
 #include "BulletManager.h"
 #include "SplineCurve.h"
 #include "HPGageUI.h"
@@ -212,7 +213,9 @@ void GamePlayScene::Initialize()
 	/*PostEffectManager::GetInstance()->Add("Dissolve");*/
 	/*PostEffectManager::GetInstance()->Add("Random");*/
 
-	
+	bloomHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Bloom>("Bloom", std::nullopt, nullptr);
+	glayscaleHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Grayscale>("Grayscale", std::nullopt, nullptr);
+
 	debugManager_->Initialize();
 
 	// シーン初期化終わり
@@ -250,7 +253,7 @@ void GamePlayScene::Initialize()
 
 void GamePlayScene::Finalize()
 {
-	SceneManager::GetInstance()->GetPostEffectController()->Cancel(handle_);
+	SceneManager::GetInstance()->GetPostEffectController()->Cancel(bloomHandle_);
 
 	enemyManager_->Finalize();
 	player_->Finalize();
@@ -542,7 +545,7 @@ void GamePlayScene::Update(const float& deltaTime)
 
 void GamePlayScene::FinishFadeIn()
 {
-	handle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Bloom>("Bloom", std::nullopt);
+	
 }
 
 void GamePlayScene::Draw()

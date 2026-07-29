@@ -70,6 +70,11 @@ public:
     // 戻り値: パスごとのバリアリスト（書き込み前に張るもの）
 	virtual std::vector<std::vector<PassBarrier>> GetBarriers() = 0;
 
+    virtual int32_t GetDefaultPriority() const
+    {
+        return 0;
+    }
+
     // -------------------------------------------------------
     //  エフェクト名（PostEffectManagerがAdd時に付与する）
     // -------------------------------------------------------

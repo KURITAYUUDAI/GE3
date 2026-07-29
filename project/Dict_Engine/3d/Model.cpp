@@ -46,7 +46,8 @@ void Model::Draw(const UINT& instanceCount)
 	}
 }
 
-void Model::DrawMesh(const uint32_t meshIndex, const UINT& instanceCount)
+void Model::DrawMesh(const uint32_t meshIndex, const UINT& instanceCount, 
+	const D3D12_VERTEX_BUFFER_VIEW* additionalVBV, const D3D12_GPU_DESCRIPTOR_HANDLE* additionalGPUHandle)
 {
 	if (instanceCount <= 0)
 	{
@@ -59,7 +60,22 @@ void Model::DrawMesh(const uint32_t meshIndex, const UINT& instanceCount)
 
 	const auto& mesh = modelData_.meshes[meshIndex];
 
-	commandList->IASetVertexBuffers(0, 1, &mesh.vertexBufferView);	// VBVを設定
+	if (additionalVBV)
+	{
+		D3D12_VERTEX_BUFFER_VIEW vbvs[2] =
+		{
+			 mesh.vertexBufferView,
+			 *additionalVBV
+		};
+		commandList->IASetVertexBuffers(0, 2, vbvs);	// VBVを設定
+
+		commandList->SetGraphicsRootDescriptorTable(5, *additionalGPUHandle);
+	} 
+	else
+	{
+		commandList->IASetVertexBuffers(0, 1, &mesh.vertexBufferView);	// VBVを設定
+	}
+
 	commandList->IASetIndexBuffer(&mesh.indexBufferView);	// IBVを設定
 
 	// 描画！（DrawCall/ドローコール）。
@@ -247,8 +263,33 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 		newMesh.materialIndex = mesh->mMaterialIndex;
 
+		for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+		{
+			aiBone* bone = mesh->mBones[boneIndex];
+			std::string jointName = bone->mName.C_Str();
+			JointWeightData& jointWeightData = newMesh.skinClusterData[jointName];
+
+			aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
+			aiVector3D scale, translate;
+			aiQuaternion rotate;
+			bindPoseMatrixAssimp.Decompose(scale, rotate, translate);
+			Matrix4x4 bindsPoseMatrix = MakeAffineMatrix(
+				{ scale.x, scale.y, scale.z },
+				{ rotate.x, -rotate.y, -rotate.z, rotate.w },
+				{ -translate.x, translate.y, translate.z }
+			);
+			jointWeightData.inverseBindPoseMatrix = Inverse(bindsPoseMatrix);
+
+			for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
+			{
+				jointWeightData.vertexWeights.push_back({ bone->mWeights[weightIndex].mWeight, bone->mWeights[weightIndex].mVertexId });
+			}
+		}
+
 		modelData_.meshes.push_back(newMesh);
 	}
+
+	
 
 	modelData_.rootNode = ReadNode(scene->mRootNode);
 }

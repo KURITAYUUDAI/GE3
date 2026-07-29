@@ -105,5 +105,9 @@ private:
 
 	Skeleton glTFSkeleton_;
 	SkeletonImGuiDebug skeletonImGuiDebug_;
+	SkinCluster glTFSkinCluster_;
+
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> skinClusterHeap_;
+
 };
 

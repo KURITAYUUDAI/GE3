@@ -25,11 +25,13 @@ public:	// メンバ関数
 	
 	void Initialize();
 
-	void Update(const Matrix4x4* worldMatrix = nullptr, const Matrix4x4* multiplyMatrix = nullptr);
+	void Update(const Matrix4x4* worldMatrix = nullptr, 
+		const Matrix4x4* multiplyMatrix = nullptr, bool applyRootNode = true);
 
 	void DrawingCommon();
 
-	void Draw();
+	void Draw(const D3D12_VERTEX_BUFFER_VIEW* additionalVBV = nullptr, 
+		const D3D12_GPU_DESCRIPTOR_HANDLE* additionalGPUHandle = nullptr);
 
 	void Finalize();
 

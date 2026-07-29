@@ -8,6 +8,8 @@
 #include "PostEffect.h"
 #include "myMath.h"
 
+#include <optional>
+
 /// <summary>
 /// ポストエフェクトを一括管理するシングルトンマネージャー
 ///
@@ -41,11 +43,11 @@ public:
     template<typename T>
     T* Get(const std::string& name)
     {
-        for (auto& effect : effectChain_)
+        for (auto& entry : effectChain_)
         {
-            if (effect->GetName() == name)
+            if (entry->GetName() == name)
             {
-                return dynamic_cast<T*>(effect.get());
+                return dynamic_cast<T*>(entry.effect.get());
             }
         }
         return nullptr; // 見つからなかった場合
@@ -65,6 +67,13 @@ public:
     explicit PostEffectManager(ConstructorKey){}
 
 public:
+
+    struct EffectEntry
+    {
+        std::unique_ptr<PostEffect> effect;
+        int32_t priority = 0;
+        uint64_t insertionOrder = 0;
+    };
 
     struct PassEntry
     {
@@ -114,7 +123,8 @@ public:
     /// 追加した順番がそのまま適用順になる。
     /// </summary>
     /// <param name="name">RegisterFactory()で登録した名前</param>
-    PostEffect* Add(const std::string& name);
+    PostEffect* Add(const std::string& name,
+        std::optional<int32_t> priority = std::nullopt);
 
     /// <summary>
     /// 指定インデックスのエフェクトをチェーンから取り除く。
@@ -156,6 +166,13 @@ public:
     /// <summary>指定インデックスのエフェクト名を返す</summary>
     const std::string& GetEffectName(uint32_t index) const;
 
+    bool SetPriority(
+     PostEffect* effect,
+     const int32_t& priority);
+
+    
+
+
 private:
 
     // -------------------------------------------------------
@@ -168,7 +185,7 @@ private:
     void DrawPassthrough(ID3D12Resource* srcResource, uint32_t srcSRVIndex);
     void CreatePingPongBuffers(uint32_t width, uint32_t height);
     void RegisterPassthroughPSO();
-
+    void SortEffectChain();
 
     /// <summary>
    /// 現在のエフェクトチェーンをすべてクリアする。
@@ -181,7 +198,7 @@ public: // 外部入出力
 	const PostEffect* GetEffect(uint32_t index) const
 	{
 		assert(index < effectChain_.size() && "PostEffectManager: GetEffect インデックスが範囲外です");
-		return effectChain_[index].get();
+		return effectChain_[index].effect.get();
 	}
 
 private:
@@ -189,7 +206,8 @@ private:
     std::unordered_map<std::string, FactoryFunc> factories_;
 
     // 現在のエフェクトチェーン（適用順）
-    std::vector<std::unique_ptr<PostEffect>> effectChain_;
+    std::vector<EffectEntry> effectChain_;
+    uint64_t nextInsertionOrder_ = 0;
 
     // ピンポンバッファ（2本固定）
     ComPtr<ID3D12Resource>      pingPongRT_[2];

@@ -83,6 +83,20 @@ bool PostEffectController::IsActive(PostEffectHandle handle) const
     return true;
 }
 
+bool PostEffectController::SetPriority(PostEffectHandle handle, int32_t priority)
+{
+    ActiveEffect* activeEffect = Find(handle);
+
+    if (!activeEffect)
+    {
+        return false;
+    }
+
+    return postEffectManager_->SetPriority(
+        activeEffect->effect,
+        priority);
+}
+
 PostEffectController::ActiveEffect* PostEffectController::Find(PostEffectHandle handle)
 {
     if (!handle.IsValid())

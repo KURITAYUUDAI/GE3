@@ -171,15 +171,20 @@ void TitleScene::Initialize()
 
 	ModelManager::GetInstance()->LoadModel("Animation", "walk.gltf");
 
+	PSOManager::GetInstance()->RegisterSkinningPSO();
+
 	glTFObject_ = std::make_unique<Object3d>();
 	glTFObject_->Initialize();
 	glTFObject_->SetModel("walk.gltf");
 	glTFObject_->SetEnableLighting(false);
+	glTFObject_->SetPsoName("Skinning");
 
 	glTFAnimation_ = LoadAnimationFile("Animation", "walk.gltf");
 	animationTime = 0.0f;
 
 	glTFSkeleton_ = CreateSkeleton(glTFObject_->GetModel()->GetRootNode(0));
+
+	glTFSkinCluster_ = CreateSkinCluster(glTFSkeleton_, glTFObject_->GetModel()->GetMesh(0), skinClusterHeap_);
 
 	// シーン初期化終わり
 
@@ -374,6 +379,7 @@ void TitleScene::Update(const float& deltaTime)
 
 	ApplyAnimation(glTFSkeleton_, glTFAnimation_, animationTime);
 	UpdateSkeleton(glTFSkeleton_);
+	UpdateSkinCluster(glTFSkinCluster_, glTFSkeleton_);
 
 #ifdef USE_IMGUI
 	skeletonImGuiDebug_.Draw(
@@ -386,7 +392,7 @@ void TitleScene::Update(const float& deltaTime)
 	
 	*/
 	
-	glTFObject_->Update(nullptr);
+	glTFObject_->Update(nullptr, nullptr, false);
 
 	enterSprite_->Update();
 
@@ -418,7 +424,7 @@ void TitleScene::Draw()
 	}
 
 	DrawDebug(glTFSkeleton_, glTFObject_->GetWorldTransform()->GetWorldMatrix());
-	glTFObject_->Draw();
+	glTFObject_->Draw(&glTFSkinCluster_.influenceBufferView, &glTFSkinCluster_.paletteSrvHandle.second);
 
 	/*particleManager_->Draw();*/
 

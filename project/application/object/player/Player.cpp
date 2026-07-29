@@ -22,8 +22,6 @@ void Player::Initialize()
 {
 	deltaTime_ = 1.0f / 60.0f; // 仮の値。実際のゲームループで更新されるべ
 
-	PSOManager::GetInstance()->RegisterEnvironmentPSO();
-
 	selector_.GetKeyboardHandler()->AssignKey("shot", DIK_SPACE);
 	selector_.GetKeyboardHandler()->AssignKey("avoid", DIK_E);
 	selector_.GetKeyboardHandler()->AssignKey("lockOn", DIK_LSHIFT);   // 追加
@@ -33,10 +31,18 @@ void Player::Initialize()
 	selector_.GetGamepadHandler()->AssignKey("lockOn", XINPUT_GAMEPAD_LEFT_SHOULDER); // 追加
 
 	ModelManager::GetInstance()->LoadModel("", "sphere.obj");
+	ModelManager::GetInstance()->LoadModel("Animation", "walk.gltf");
 
 	object3d_ = std::make_unique<Object3d>();
 	object3d_->Initialize();
-	object3d_->SetModel("sphere.obj");
+	object3d_->SetModel("walk.gltf");
+
+	animation_ = LoadAnimationFile("Animation", "walk.gltf");
+	animationTime = 0.0f;
+
+	skeleton_ = CreateSkeleton(object3d_->GetModel()->GetRootNode(0));
+
+	skinCluster_ = CreateSkinCluster(skeleton_, object3d_->GetModel()->GetMesh(0), skinClusterHeap_);
 
 	collider_ = std::make_unique<Collider>();
 	collider_->SetOwner(this);
@@ -191,8 +197,15 @@ void Player::Update(const float& deltaTime)
 
 	CameraManager::GetInstance()->LimitPlayerInFrustum(transform_.translate);
 
+	animationTime += deltaTime;
+	animationTime = std::fmod(animationTime, animation_.duration);
+
+	ApplyAnimation(skeleton_, animation_, animationTime);
+	UpdateSkeleton(skeleton_);
+	UpdateSkinCluster(skinCluster_, skeleton_);
+
 	object3d_->SetTransform(transform_);
-	object3d_->Update();
+	object3d_->Update(nullptr, nullptr, false);
 
 	eventBus_->Publish(PlayerWorldPositionEvent
 		{
@@ -234,16 +247,16 @@ void Player::Draw()
 	// 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えておけば良い
 	DirectXBase::GetInstance()->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, environmentTextureIndex_);
+	//SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, environmentTextureIndex_);
 
-	DissolveManager::GetInstance()->SetCbufferDissolveResource(6, dissolveParams_);
-	DissolveManager::GetInstance()->SetCbufferMaskTexture(7, 0);
+	//DissolveManager::GetInstance()->SetCbufferDissolveResource(6, dissolveParams_);
+	//DissolveManager::GetInstance()->SetCbufferMaskTexture(7, 0);
 
 	if (isDraw_)
 	{
 		if (static_cast<int>(damageTimer_ * 60.0f) % 5 == 0)
 		{
-			object3d_->Draw();
+			object3d_->Draw(&skinCluster_.influenceBufferView, &skinCluster_.paletteSrvHandle.second);
 		}
 	}
 

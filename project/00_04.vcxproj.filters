@@ -363,6 +363,9 @@
     <ClCompile Include="Dict_Engine\base\MaterialInstance.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="application\tool\postEffect\Grayscale.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d\Object3d.PS.hlsl">
@@ -399,6 +402,7 @@
     <FxCompile Include="resources\shaders\Font\FreetypeFont.PS.hlsl" />
     <FxCompile Include="resources\shaders\Font\FreetypeFont.VS.hlsl" />
     <FxCompile Include="resources\shaders\Object3d\Object3d.GS.hlsl" />
+    <FxCompile Include="resources\shaders\SkinningObject3d\SkinningObject3d.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dict_Engine\camera\DebugCamera.h">
@@ -705,6 +709,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Dict_Engine\base\MaterialInstance.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="application\tool\postEffect\Grayscale.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

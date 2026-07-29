@@ -54,7 +54,8 @@ public:
     PostEffectHandle Emit(
         const std::string& effectName,
         std::optional<float> duration,
-        std::function<void(EffectType&, float progress, float elapsedTime)> updater = nullptr);
+        std::function<void(EffectType&, float progress, float elapsedTime)> updater = nullptr,
+        std::optional<int32_t> priority = std::nullopt);
 
     template<class EffectType>
     void Edit(
@@ -63,6 +64,10 @@ public:
 
     template<class EffectType>
     EffectType* Get(PostEffectHandle handle);
+
+    bool SetPriority(
+        PostEffectHandle handle,
+        int32_t priority);
 
 private:
     struct ActiveEffect
@@ -98,9 +103,10 @@ template<class EffectType>
 PostEffectHandle PostEffectController::Emit(
     const std::string& effectName,
     std::optional<float> duration,
-    std::function<void(EffectType&, float progress, float elapsedTime)> updater)
+    std::function<void(EffectType&, float progress, float elapsedTime)> updater, 
+    std::optional<int32_t> priority)
 {
-    PostEffect* effect = postEffectManager_->Add(effectName);
+    PostEffect* effect = postEffectManager_->Add(effectName, priority);
     assert(effect);
 
     auto* typedEffect = dynamic_cast<EffectType*>(effect);

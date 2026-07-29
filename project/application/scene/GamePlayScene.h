@@ -125,6 +125,7 @@ private:
 
 	std::unique_ptr<Sprite> controlSprite_;
 
-	PostEffectHandle handle_;
+	PostEffectHandle bloomHandle_;
+	PostEffectHandle glayscaleHandle_;
 };
 

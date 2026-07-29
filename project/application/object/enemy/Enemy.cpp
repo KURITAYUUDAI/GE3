@@ -35,6 +35,8 @@ void Enemy::Initialize()
 	objectRightHand_->Initialize();
 	objectRightHand_->SetModel("RightHand.obj");
 	objectRightHand_->SetEnvironmentCoefficient(0.2f);
+	objectRightHand_->SetShininess(0.1f);
+	objectRightHand_->SetAlphaReference(0.1f);
 	objectRightHand_->SetParent(object3d_->GetWorldTransform());
 
 	colliderAttack_ = std::make_unique<Collider>();

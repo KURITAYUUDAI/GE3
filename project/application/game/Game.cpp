@@ -8,6 +8,7 @@
 #include "Dissolve.h"
 #include "Random.h"
 #include "Darken.h"
+#include "Grayscale.h"
 
 void Game::Initialize()
 {
@@ -28,6 +29,8 @@ void Game::Initialize()
 		[]{ return std::make_unique<Random>(); });
 	postEffectManager_->RegisterFactory("Darken",
 		[]{ return std::make_unique<Darken>(); });
+	postEffectManager_->RegisterFactory("Grayscale",
+		[]{ return std::make_unique<Grayscale>(); });
 
 	// シーンマネージャーに最初のシーンをセット
 	sceneManager_->Initialize("TITLE");

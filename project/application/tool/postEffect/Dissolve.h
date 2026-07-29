@@ -21,6 +21,11 @@ public: // 外部入出力
 	const float& GetThreshold() { return params_.threshold; }
 	const Vector4& GetEdgeColor() { return params_.edgeColor; }
 
+	int32_t GetDefaultPriority() const override
+	{
+		return 1000;
+	}
+
 private:
 
 	void Pass(D3D12_CPU_DESCRIPTOR_HANDLE destRTV, uint32_t srcSRVIndex);

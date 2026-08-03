@@ -214,7 +214,7 @@ void GamePlayScene::Initialize()
 	/*PostEffectManager::GetInstance()->Add("Random");*/
 
 	bloomHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Bloom>("Bloom", std::nullopt, nullptr);
-	glayscaleHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Grayscale>("Grayscale", std::nullopt, nullptr);
+	//glayscaleHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Grayscale>("Grayscale", std::nullopt, nullptr);
 
 	debugManager_->Initialize();
 

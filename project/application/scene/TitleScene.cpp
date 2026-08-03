@@ -423,8 +423,8 @@ void TitleScene::Draw()
 
 	}
 
-	DrawDebug(glTFSkeleton_, glTFObject_->GetWorldTransform()->GetWorldMatrix());
-	glTFObject_->Draw(&glTFSkinCluster_.influenceBufferView, &glTFSkinCluster_.paletteSrvHandle.second);
+	/*DrawDebug(glTFSkeleton_, glTFObject_->GetWorldTransform()->GetWorldMatrix());
+	glTFObject_->Draw(&glTFSkinCluster_.influenceBufferView, &glTFSkinCluster_.paletteSrvHandle.second);*/
 
 	/*particleManager_->Draw();*/
 

@@ -40,6 +40,14 @@ public:
 
 private:
 
+	void UpdatePostEffectToggles();
+
+	void DrawPostEffectWindow();
+
+	void CancelPostEffects();
+
+private:
+
 	std::vector<std::unique_ptr<Sprite>> sprites_;
 
 	std::vector<std::unique_ptr<Object3d>> object3ds_;
@@ -125,7 +133,11 @@ private:
 
 	std::unique_ptr<Sprite> controlSprite_;
 
-	PostEffectHandle bloomHandle_;
-	PostEffectHandle glayscaleHandle_;
+	PostEffectHandle outlineHandle_ = kInvalidPostEffectHandle;
+	PostEffectHandle gaussianBlurHandle_ = kInvalidPostEffectHandle;
+	PostEffectHandle radialBlurHandle_ = kInvalidPostEffectHandle;
+	PostEffectHandle bloomHandle_ = kInvalidPostEffectHandle;
+	PostEffectHandle randomHandle_ = kInvalidPostEffectHandle;
+	PostEffectHandle grayscaleHandle_ = kInvalidPostEffectHandle;
 };
 

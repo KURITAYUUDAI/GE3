@@ -4,9 +4,9 @@
 #include "CameraManager.h"
 #include "PrimitiveManager.h"
 #include "PostEffectManager.h"
+#include "Outline.h"
 #include "GaussianBlur.h"
 #include "RadialBlur.h"
-#include "Dissolve.h"
 #include "Random.h"
 #include "Bloom.h"
 #include "Grayscale.h"
@@ -206,15 +206,14 @@ void GamePlayScene::Initialize()
 	cylinderEmitter_->Initialize("cylinder",
 		{ {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }, 1, 0.2f);
 
-	//PostEffectManager::GetInstance()->Add("Outline");
-	//PostEffectManager::GetInstance()->Add("GaussianBlur");
-	//PostEffectManager::GetInstance()->Add("RadialBlur");
-	//PostEffectManager::GetInstance()->Add("Bloom");
-	/*PostEffectManager::GetInstance()->Add("Dissolve");*/
-	/*PostEffectManager::GetInstance()->Add("Random");*/
-
-	bloomHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Bloom>("Bloom", std::nullopt, nullptr);
-	glayscaleHandle_ = SceneManager::GetInstance()->GetPostEffectController()->Emit<Grayscale>("Grayscale", std::nullopt, nullptr);
+	auto* postEffectController =
+		SceneManager::GetInstance()->GetPostEffectController();
+	outlineHandle_ =
+		postEffectController->Emit<Outline>("Outline", std::nullopt, nullptr, 1);
+	bloomHandle_ =
+		postEffectController->Emit<Bloom>("Bloom", std::nullopt, nullptr, 0);
+	grayscaleHandle_ =
+		postEffectController->Emit<Grayscale>("Grayscale", std::nullopt, nullptr, 2);
 
 	debugManager_->Initialize();
 
@@ -253,7 +252,7 @@ void GamePlayScene::Initialize()
 
 void GamePlayScene::Finalize()
 {
-	SceneManager::GetInstance()->GetPostEffectController()->Cancel(bloomHandle_);
+	CancelPostEffects();
 
 	enemyManager_->Finalize();
 	player_->Finalize();
@@ -310,6 +309,8 @@ void GamePlayScene::Update(const float& deltaTime)
 
 	WorldTransform::AdvanceFrame();
 
+	UpdatePostEffectToggles();
+
 #ifdef _DEBUG
 
 	// デモウィンドウ表示
@@ -327,57 +328,7 @@ void GamePlayScene::Update(const float& deltaTime)
 	ImGui::End();
 
 
-	/*ImGui::Begin("GaussianBlur");
-	auto* blur = PostEffectManager::GetInstance()->Get<GaussianBlur>("GaussianBlur");
-	float sigma = blur->GetSigma();
-	int kernelRadius = blur->GetKernelRadius();
-	if (ImGui::SliderFloat("Sigma", &sigma, 0.1f, 20.0f))
-	{
-		blur->SetSigma(sigma);
-	}
-	if (ImGui::SliderInt("KernelRadius", &kernelRadius, 1, 64))
-	{
-		blur->SetKernelRadius(kernelRadius);
-	}
-
-	ImGui::End();*/
-
-	/*ImGui::Begin("RadialBlur");
-	auto* blur = PostEffectManager::GetInstance()->Get<RadialBlur>("RadialBlur");
-	Vector2 center = blur->GetCenter();
-	float blurWidth = blur->GetBlurWidth();
-	if (ImGui::SliderFloat2("center", &center.x, 0.0f, 1.0f))
-	{
-		blur->SetCenter(center);
-	}
-	if (ImGui::SliderFloat("BlurWidth", &blurWidth, 0.0f, 0.01f))
-	{
-		blur->SetBlurWidth(blurWidth);
-	}
-
-	ImGui::End();*/
-
-	/*ImGui::Begin("Dissolve");
-	auto* dissolve = PostEffectManager::GetInstance()->Get<Dissolve>("Dissolve");
-	Vector4 edgeColor = dissolve->GetEdgeColor();
-	float threshold = dissolve->GetThreshold();
-	if (ImGui::ColorEdit4("##colorSprite", &edgeColor.x))
-	{
-		dissolve->SetEdgeColor(edgeColor);
-	}
-	if (ImGui::SliderFloat("threshold", &threshold, 0.0f, 1.0f))
-	{
-		dissolve->SetThreshold(threshold);
-	}
-
-	ImGui::End();*/
-
-	//auto* random = PostEffectManager::GetInstance()->Get<Random>("Random");
-	//random->SetTime()
-
-	//ImGui_ImplDX12_NewFrame();
-	//ImGui_ImplWin32_NewFrame();
-	//ImGui::NewFrame();
+	DrawPostEffectWindow();
 
 	
 	ImGui::Begin("LightSetting");
@@ -541,6 +492,263 @@ void GamePlayScene::Update(const float& deltaTime)
 	enemyIDs_.end());
 
 	
+}
+
+void GamePlayScene::UpdatePostEffectToggles()
+{
+	auto* controller =
+		SceneManager::GetInstance()->GetPostEffectController();
+
+	if (inputManager_->TriggerKey(DIK_F1))
+	{
+		if (controller->IsActive(outlineHandle_))
+		{
+			controller->Cancel(outlineHandle_);
+			outlineHandle_ = kInvalidPostEffectHandle;
+		}
+		else
+		{
+			outlineHandle_ =
+				controller->Emit<Outline>("Outline", std::nullopt);
+		}
+	}
+
+	if (inputManager_->TriggerKey(DIK_F2))
+	{
+		if (controller->IsActive(gaussianBlurHandle_))
+		{
+			controller->Cancel(gaussianBlurHandle_);
+			gaussianBlurHandle_ = kInvalidPostEffectHandle;
+		}
+		else
+		{
+			gaussianBlurHandle_ =
+				controller->Emit<GaussianBlur>("GaussianBlur", std::nullopt);
+		}
+	}
+
+	if (inputManager_->TriggerKey(DIK_F3))
+	{
+		if (controller->IsActive(radialBlurHandle_))
+		{
+			controller->Cancel(radialBlurHandle_);
+			radialBlurHandle_ = kInvalidPostEffectHandle;
+		}
+		else
+		{
+			radialBlurHandle_ =
+				controller->Emit<RadialBlur>("RadialBlur", std::nullopt);
+		}
+	}
+
+	if (inputManager_->TriggerKey(DIK_F4))
+	{
+		if (controller->IsActive(bloomHandle_))
+		{
+			controller->Cancel(bloomHandle_);
+			bloomHandle_ = kInvalidPostEffectHandle;
+		}
+		else
+		{
+			bloomHandle_ =
+				controller->Emit<Bloom>("Bloom", std::nullopt);
+		}
+	}
+
+	if (inputManager_->TriggerKey(DIK_F5))
+	{
+		if (controller->IsActive(randomHandle_))
+		{
+			controller->Cancel(randomHandle_);
+			randomHandle_ = kInvalidPostEffectHandle;
+		}
+		else
+		{
+			randomHandle_ =
+				controller->Emit<Random>("Random", std::nullopt);
+		}
+	}
+
+	if (inputManager_->TriggerKey(DIK_F6))
+	{
+		if (controller->IsActive(grayscaleHandle_))
+		{
+			controller->Cancel(grayscaleHandle_);
+			grayscaleHandle_ = kInvalidPostEffectHandle;
+		}
+		else
+		{
+			grayscaleHandle_ =
+				controller->Emit<Grayscale>("Grayscale", std::nullopt);
+		}
+	}
+}
+
+void GamePlayScene::DrawPostEffectWindow()
+{
+#ifdef _DEBUG
+	auto* controller =
+		SceneManager::GetInstance()->GetPostEffectController();
+
+	ImGui::Begin("PostEffectWindow");
+	ImGui::TextUnformatted(
+		"F1 Outline / F2 GaussianBlur / F3 RadialBlur / F4 Bloom");
+	ImGui::TextUnformatted(
+		"F5 Random / F6 Grayscale");
+	ImGui::Separator();
+
+	bool hasActiveEffect = false;
+
+	if (auto* outline = controller->Get<Outline>(outlineHandle_))
+	{
+		(void)outline;
+		hasActiveEffect = true;
+		ImGui::PushID("Outline");
+		if (ImGui::CollapsingHeader("F1 Outline",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::TextUnformatted("No adjustable parameters.");
+		}
+		ImGui::PopID();
+	}
+
+	if (auto* blur = controller->Get<GaussianBlur>(gaussianBlurHandle_))
+	{
+		hasActiveEffect = true;
+		ImGui::PushID("GaussianBlur");
+		if (ImGui::CollapsingHeader("F2 GaussianBlur",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			float sigma = blur->GetSigma();
+			int kernelRadius = blur->GetKernelRadius();
+			if (ImGui::SliderFloat("Sigma", &sigma, 0.1f, 20.0f))
+			{
+				blur->SetSigma(sigma);
+			}
+			if (ImGui::SliderInt(
+				"Kernel Radius", &kernelRadius, 1, 64))
+			{
+				blur->SetKernelRadius(kernelRadius);
+			}
+		}
+		ImGui::PopID();
+	}
+
+	if (auto* blur = controller->Get<RadialBlur>(radialBlurHandle_))
+	{
+		hasActiveEffect = true;
+		ImGui::PushID("RadialBlur");
+		if (ImGui::CollapsingHeader("F3 RadialBlur",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			Vector2 center = blur->GetCenter();
+			float blurWidth = blur->GetBlurWidth();
+			if (ImGui::SliderFloat2(
+				"Center", &center.x, 0.0f, 1.0f))
+			{
+				blur->SetCenter(center);
+			}
+			if (ImGui::SliderFloat(
+				"Blur Width", &blurWidth, 0.0f, 0.05f, "%.4f"))
+			{
+				blur->SetBlurWidth(blurWidth);
+			}
+		}
+		ImGui::PopID();
+	}
+
+	if (auto* bloom = controller->Get<Bloom>(bloomHandle_))
+	{
+		hasActiveEffect = true;
+		ImGui::PushID("Bloom");
+		if (ImGui::CollapsingHeader("F4 Bloom",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			float sigma = bloom->GetSigma();
+			int kernelRadius = bloom->GetKernelRadius();
+			if (ImGui::SliderFloat("Sigma", &sigma, 0.1f, 20.0f))
+			{
+				bloom->SetSigma(sigma);
+			}
+			if (ImGui::SliderInt(
+				"Kernel Radius", &kernelRadius, 1, 64))
+			{
+				bloom->SetKernelRadius(kernelRadius);
+			}
+		}
+		ImGui::PopID();
+	}
+
+	if (auto* random = controller->Get<Random>(randomHandle_))
+	{
+		(void)random;
+		hasActiveEffect = true;
+		ImGui::PushID("Random");
+		if (ImGui::CollapsingHeader("F5 Random",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::TextUnformatted(
+				"Time is updated automatically by ChronoManager.");
+		}
+		ImGui::PopID();
+	}
+
+	if (auto* grayscale = controller->Get<Grayscale>(grayscaleHandle_))
+	{
+		hasActiveEffect = true;
+		ImGui::PushID("Grayscale");
+		if (ImGui::CollapsingHeader("F6 Grayscale",
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			float intensity = grayscale->GetIntensity();
+			if (ImGui::SliderFloat(
+				"Intensity", &intensity, 0.0f, 1.0f))
+			{
+				grayscale->SetIntensity(intensity);
+			}
+		}
+		ImGui::PopID();
+	}
+
+	if (!hasActiveEffect)
+	{
+		ImGui::TextDisabled(
+			"No active post effects. Press F1-F6 to add one.");
+	}
+
+	ImGui::End();
+#endif
+}
+
+void GamePlayScene::CancelPostEffects()
+{
+	auto* controller =
+		SceneManager::GetInstance()->GetPostEffectController();
+
+	const PostEffectHandle handles[] =
+	{
+		outlineHandle_,
+		gaussianBlurHandle_,
+		radialBlurHandle_,
+		bloomHandle_,
+		randomHandle_,
+		grayscaleHandle_,
+	};
+
+	for (PostEffectHandle handle : handles)
+	{
+		if (controller->IsActive(handle))
+		{
+			controller->Cancel(handle);
+		}
+	}
+
+	outlineHandle_ = kInvalidPostEffectHandle;
+	gaussianBlurHandle_ = kInvalidPostEffectHandle;
+	radialBlurHandle_ = kInvalidPostEffectHandle;
+	bloomHandle_ = kInvalidPostEffectHandle;
+	randomHandle_ = kInvalidPostEffectHandle;
+	grayscaleHandle_ = kInvalidPostEffectHandle;
 }
 
 void GamePlayScene::FinishFadeIn()

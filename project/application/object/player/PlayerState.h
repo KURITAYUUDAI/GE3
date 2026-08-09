@@ -13,6 +13,7 @@ enum class PlayerStateType
 	Shot,
 	Avoid,
 	JustAvoid,
+	MeleeAttack,
 };
 
 class IPlayerState
@@ -44,6 +45,33 @@ private:
 	std::unique_ptr<IPlayerCommand>      moveCommand_;
 	std::unique_ptr<IPlayerCommand>      shotCommand_;
 	std::unique_ptr<IPlayerCommand>      avoidCommand_;
+	std::unique_ptr<IPlayerCommand>      meleeAttackCommand_;
+};
+
+class PlayerMeleeAttackState : public IPlayerState
+{
+private:
+	enum class AttackPhase
+	{
+		Approach,
+		Windup,
+		Attack,
+		Recovery,
+	};
+
+public:
+	PlayerStateType GetType() const override { return PlayerStateType::MeleeAttack; }
+	void Initialize(Player* player) override;
+	void Update(Player* player, const float& deltaTime) override;
+	void Draw(Player* player) override;
+	void Finalize(Player* player) override;
+
+private:
+	AttackPhase phase_ = AttackPhase::Approach;
+	float timer_ = 0.0f;
+	Vector3 startPosition_{};
+	Vector3 approachPosition_{};
+	Vector3 attackDirection_{ 0.0f, 0.0f, 1.0f };
 };
 
 class PlayerShotState : public IPlayerState

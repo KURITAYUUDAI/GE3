@@ -44,3 +44,13 @@ public:
 private:
 	IInputHandler* inputHandler_;
 };
+
+class MeleeAttackCommand : public IPlayerCommand
+{
+public:
+	MeleeAttackCommand(IInputHandler* inputHandler) : inputHandler_(inputHandler) {}
+	void Execute(Player* player) override;
+
+private:
+	IInputHandler* inputHandler_;
+};

@@ -490,6 +490,10 @@ void GamePlayScene::Update(const float& deltaTime)
 	if (!player_->GetIsDead())
 	{
 		collisionManager_->AddCollider(player_->GetCollider());
+		if (player_->GetIsAttackColliderActive())
+		{
+			collisionManager_->AddCollider(player_->GetAttackCollider());
+		}
 	}
 	
 	for (EnemyID id : enemyIDs_)

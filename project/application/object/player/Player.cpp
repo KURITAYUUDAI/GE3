@@ -9,6 +9,7 @@
 #include "DebugDrawManager.h"
 #include "PlayerEvent.h"
 #include "enemy/EnemyEvent.h"
+#include "enemy/Enemy.h"
 
 #include "Dict_Engine/tool/effect/DissolveManager.h"
 #include "time/DeltaTimeManager.h"
@@ -25,10 +26,12 @@ void Player::Initialize()
 	selector_.GetKeyboardHandler()->AssignKey("shot", DIK_SPACE);
 	selector_.GetKeyboardHandler()->AssignKey("avoid", DIK_E);
 	selector_.GetKeyboardHandler()->AssignKey("lockOn", DIK_LSHIFT);   // 追加
+	selector_.GetKeyboardHandler()->AssignKey("melee", DIK_F);
 
 	selector_.GetGamepadHandler()->AssignKey("shot", XINPUT_GAMEPAD_RIGHT_SHOULDER);
 	selector_.GetGamepadHandler()->AssignKey("avoid", XINPUT_GAMEPAD_X);
 	selector_.GetGamepadHandler()->AssignKey("lockOn", XINPUT_GAMEPAD_LEFT_SHOULDER); // 追加
+	selector_.GetGamepadHandler()->AssignKey("melee", XINPUT_GAMEPAD_B);
 
 	ModelManager::GetInstance()->LoadModel("", "sphere.obj");
 	ModelManager::GetInstance()->LoadModel("Animation", "walk.gltf");
@@ -49,6 +52,14 @@ void Player::Initialize()
 	collider_->SetRadius(1.0f);
 	collider_->SetAttribute(CollisionAttribute::Player);
 	collider_->SetMask(CollisionAttribute::Player);
+
+	colliderAttack_ = std::make_unique<Collider>();
+	colliderAttack_->SetOwner(this);
+	colliderAttack_->SetOnCollision([this](Collider* self, Collider* other)
+		{ OnCollision(self, other); });
+	colliderAttack_->SetRadius(2.0f);
+	colliderAttack_->SetAttribute(CollisionAttribute::PlayerAttack);
+	colliderAttack_->SetMask(CollisionAttribute::Player);
 
 	transform_.scale = { 1.0f, 1.0f, 1.0f };
 	transform_.rotate = { 0.0f, 0.0f, 0.0f };
@@ -231,6 +242,7 @@ void Player::Update(const float& deltaTime)
 	}
 
 	collider_->SetWorldPosition(GetWorldPosition());
+	colliderAttack_->SetWorldPosition(GetWorldPosition() + meleeAttackDirection_ * 2.0f);
 }
 
 void Player::Draw()
@@ -263,6 +275,11 @@ void Player::Draw()
 #ifdef _DEBUG
 	DebugDrawManager::GetInstance()->AddSphere(GetWorldPosition(),
 		collider_->GetRadius(), { 1.0f, 1.0f, 1.0f, 1.0f }, 8);
+	if (isAttackColliderActive_)
+	{
+		DebugDrawManager::GetInstance()->AddSphere(colliderAttack_->GetWorldPosition(),
+			colliderAttack_->GetRadius(), { 0.0f, 1.0f, 1.0f, 1.0f }, 8);
+	}
 #endif
 }
 
@@ -283,6 +300,16 @@ void Player::ChangeState(std::unique_ptr<IPlayerState> newState)
 
 void Player::OnCollision(Collider* self, Collider* other)
 {
+	if (self->GetAttribute() == static_cast<uint32_t>(CollisionAttribute::PlayerAttack))
+	{
+		if (other->GetAttribute() == static_cast<uint32_t>(CollisionAttribute::Enemy) &&
+			meleeHitEnemies_.insert(other->GetOwner()).second)
+		{
+			static_cast<Enemy*>(other->GetOwner())->Damage(1);
+		}
+		return;
+	}
+
 	if (justAvoidAccept_ && other->GetOwner()->GetIsHit())
 	{
 		JustAvoid(avoidDirection_);
@@ -410,6 +437,20 @@ void Player::Shot()
 	}
 }
 
+void Player::MeleeAttack()
+{
+	ChangeState(std::make_unique<PlayerMeleeAttackState>());
+}
+
+void Player::SetAttackColliderActive(bool active)
+{
+	if (active && !isAttackColliderActive_)
+	{
+		meleeHitEnemies_.clear();
+	}
+	isAttackColliderActive_ = active;
+}
+
 void Player::Avoid(const Vector2& direction)
 {
 	ChangeState(std::make_unique<PlayerAvoidState>(direction));
@@ -484,6 +525,7 @@ const Vector3 Player::GetWorldRotate() const
 
 void Player::SetParent(WorldTransform* worldTransform)
 {
+	parentTransform_ = worldTransform;
 	object3d_->SetParent(worldTransform);
 }
 

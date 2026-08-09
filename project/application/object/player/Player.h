@@ -17,6 +17,7 @@
 
 #include "ParticleEmitter.h"
 #include "JustAvoidDarken.h"
+#include <unordered_set>
 
 #include "AnimationUtility.h"
 
@@ -48,6 +49,7 @@ public:	// Command
 	void Decelerate();
 	void LockOn();
 	void Shot();
+	void MeleeAttack();
 	void Avoid(const Vector2& direction);
 	void JustAvoid(const Vector3& avoidDirection);
 	void StopJustAvoid(const float& returnRate);
@@ -72,6 +74,11 @@ public:	//外部入出力
 	const Vector3 GetWorldRotate() const;
 
 	Collider* GetCollider() { return collider_.get(); }
+	Collider* GetAttackCollider() { return colliderAttack_.get(); }
+	bool GetIsAttackColliderActive() const { return isAttackColliderActive_; }
+	bool HasNearestEnemy() const { return hasNearestEnemy_; }
+	const Vector3& GetNearestEnemyPosition() const { return cachedNearestEnemyPosition_; }
+	WorldTransform* GetParentWorldTransform() const { return parentTransform_; }
 
 	// HP
 	const int& GetHitPoint() const { return hitPoint_; }
@@ -103,6 +110,8 @@ public:	//外部入出力
 
 	void SetAvoidDirection(const Vector3& avoidDirection){ avoidDirection_ = avoidDirection; }
 	void SetJustAvoidAccept(const bool justAvoidAccept) { justAvoidAccept_ = justAvoidAccept; }
+	void SetAttackColliderActive(bool active);
+	void SetMeleeAttackDirection(const Vector3& direction) { meleeAttackDirection_ = direction; }
 
 private:
 
@@ -132,6 +141,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> skinClusterHeap_;
 
 	std::unique_ptr<Collider> collider_;
+	std::unique_ptr<Collider> colliderAttack_;
+	bool isAttackColliderActive_ = false;
+	Vector3 meleeAttackDirection_{ 0.0f, 0.0f, 1.0f };
+	std::unordered_set<ICollisionObserver*> meleeHitEnemies_;
 
 	EulerTransform transform_;
 
@@ -176,4 +189,5 @@ private:
 
 
 	std::unique_ptr<JustAvoidDarken> justAvoidDarken_;
+	WorldTransform* parentTransform_ = nullptr;
 };

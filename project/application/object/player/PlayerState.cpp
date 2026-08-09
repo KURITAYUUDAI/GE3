@@ -9,6 +9,8 @@ void PlayerIdleState::Initialize(Player* player)
 		player->GetInputHandlerSelector()->GetHandler());
 	avoidCommand_ = std::make_unique<AvoidCommand>(
 		player->GetInputHandlerSelector()->GetHandler());
+	meleeAttackCommand_ = std::make_unique<MeleeAttackCommand>(
+		player->GetInputHandlerSelector()->GetHandler());
 }
 
 void PlayerIdleState::Update(Player * player, const float& deltaTime)
@@ -26,6 +28,11 @@ void PlayerIdleState::Update(Player * player, const float& deltaTime)
 	{
 		avoidCommand_->Execute(player);
 		return; // ★ 追加: Avoid()内部でChangeStateされる
+	}
+	if (handler->IsActionTriggerd("melee"))
+	{
+		meleeAttackCommand_->Execute(player);
+		return;
 	}
 }
 
@@ -255,4 +262,82 @@ void PlayerJustAvoidState::Draw(Player * player)
 void PlayerJustAvoidState::Finalize(Player * player)
 {
 	player->SetIsHit(true);
+}
+
+void PlayerMeleeAttackState::Initialize(Player* player)
+{
+	phase_ = AttackPhase::Approach;
+	timer_ = 0.0f;
+	startPosition_ = player->GetTranslate();
+	approachPosition_ = startPosition_;
+	player->SetVelocity({ 0.0f, 0.0f, 0.0f });
+	player->SetAttackColliderActive(false);
+
+	if (player->HasNearestEnemy())
+	{
+		const Vector3 playerWorld = player->GetWorldPosition();
+		Vector3 toTarget = player->GetNearestEnemyPosition() - playerWorld;
+		if (Length(toTarget) > 0.0001f)
+		{
+			attackDirection_ = Normalize(toTarget);
+			Vector3 destinationWorld = player->GetNearestEnemyPosition() - attackDirection_ * 2.0f;
+			if (player->GetParentWorldTransform())
+			{
+				approachPosition_ = TransformPosition(destinationWorld,
+					Inverse(player->GetParentWorldTransform()->worldMatrix_));
+			}
+			else
+			{
+				approachPosition_ = destinationWorld;
+			}
+		}
+	}
+	else
+	{
+		attackDirection_ = Normalize(TransformNormal(
+			{ 0.0f, 0.0f, 1.0f }, player->GetParentWorldTransform()
+				? player->GetParentWorldTransform()->worldMatrix_ : MakeIdentity4x4()));
+	}
+
+	player->SetMeleeAttackDirection(attackDirection_);
+}
+
+void PlayerMeleeAttackState::Update(Player* player, const float& deltaTime)
+{
+	timer_ += deltaTime;
+
+	switch (phase_)
+	{
+	case AttackPhase::Approach:
+		player->SetTranslate(Lerp(startPosition_, approachPosition_, std::min(timer_ / 0.25f, 1.0f)));
+		if (timer_ >= 0.25f) { phase_ = AttackPhase::Windup; timer_ = 0.0f; }
+		break;
+	case AttackPhase::Windup:
+		if (timer_ >= 0.15f)
+		{
+			phase_ = AttackPhase::Attack;
+			timer_ = 0.0f;
+			player->SetAttackColliderActive(true);
+		}
+		break;
+	case AttackPhase::Attack:
+		if (timer_ >= 0.20f)
+		{
+			phase_ = AttackPhase::Recovery;
+			timer_ = 0.0f;
+			player->SetAttackColliderActive(false);
+		}
+		break;
+	case AttackPhase::Recovery:
+		if (timer_ >= 0.30f) player->ChangeState(std::make_unique<PlayerIdleState>());
+		break;
+	}
+}
+
+void PlayerMeleeAttackState::Draw(Player* player) { (void)player; }
+
+void PlayerMeleeAttackState::Finalize(Player* player)
+{
+	player->SetAttackColliderActive(false);
+	player->SetVelocity({ 0.0f, 0.0f, 0.0f });
 }

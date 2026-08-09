@@ -139,7 +139,7 @@ void EnemyAttackState::Update(Enemy * enemy, const float& deltaTime)
 		{
 			attackPhase_ = AttackPhase::Away;
 			timer_ = 0.0f;
-			duration_ = 0.6f;
+			duration_ = 1.0f;
 			approachPosition_ = enemy->GetTranslate();
 			handPosition_ = enemy->GetRightHandTransform().translate;
 		}

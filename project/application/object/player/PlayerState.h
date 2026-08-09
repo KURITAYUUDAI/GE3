@@ -53,7 +53,6 @@ class PlayerMeleeAttackState : public IPlayerState
 private:
 	enum class AttackPhase
 	{
-		Approach,
 		Windup,
 		Attack,
 		Recovery,
@@ -67,10 +66,8 @@ public:
 	void Finalize(Player* player) override;
 
 private:
-	AttackPhase phase_ = AttackPhase::Approach;
+	AttackPhase phase_ = AttackPhase::Windup;
 	float timer_ = 0.0f;
-	Vector3 startPosition_{};
-	Vector3 approachPosition_{};
 	Vector3 attackDirection_{ 0.0f, 0.0f, 1.0f };
 };
 

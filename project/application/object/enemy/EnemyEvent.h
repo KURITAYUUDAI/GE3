@@ -21,9 +21,9 @@ struct EnemyAppierEvent
 
 struct NearestEnemyInfoEvent
 {
-    EnemyID enemyID;
-    Vector3 worldPosition;
-    bool isValid; // 敵が1体もいない場合 false
+    EnemyID enemyID = 0;
+    Vector3 worldPosition{};
+    bool isValid = false; // 敵が1体もいない場合 false
 };
 
 struct EnemyScreenPositionEvent

@@ -26,7 +26,7 @@ void Player::Initialize()
 	selector_.GetKeyboardHandler()->AssignKey("shot", DIK_SPACE);
 	selector_.GetKeyboardHandler()->AssignKey("avoid", DIK_E);
 	selector_.GetKeyboardHandler()->AssignKey("lockOn", DIK_LSHIFT);   // 追加
-	selector_.GetKeyboardHandler()->AssignKey("melee", DIK_F);
+	selector_.GetKeyboardHandler()->AssignKey("melee", DIK_B);
 
 	selector_.GetGamepadHandler()->AssignKey("shot", XINPUT_GAMEPAD_RIGHT_SHOULDER);
 	selector_.GetGamepadHandler()->AssignKey("avoid", XINPUT_GAMEPAD_X);
@@ -35,10 +35,21 @@ void Player::Initialize()
 
 	ModelManager::GetInstance()->LoadModel("", "sphere.obj");
 	ModelManager::GetInstance()->LoadModel("Animation", "walk.gltf");
+	ModelManager::GetInstance()->LoadModel("RightHand", "RightHand.obj");
 
 	object3d_ = std::make_unique<Object3d>();
 	object3d_->Initialize();
 	object3d_->SetModel("walk.gltf");
+
+	objectMeleeHand_ = std::make_unique<Object3d>();
+	objectMeleeHand_->Initialize();
+	objectMeleeHand_->SetModel("RightHand.obj");
+	objectMeleeHand_->SetPsoName("Environment");
+	objectMeleeHand_->SetEnvironmentCoefficient(0.2f);
+	objectMeleeHand_->SetParent(object3d_->GetWorldTransform());
+	meleeHandTransform_.scale = { 0.35f, 0.35f, 0.35f };
+	meleeHandTransform_.rotate = { 0.0f, pi, 0.0f };
+	meleeHandTransform_.translate = { 0.8f, 0.0f, 0.5f };
 
 	animation_ = LoadAnimationFile("Animation", "walk.gltf");
 	animationTime = 0.0f;
@@ -217,6 +228,8 @@ void Player::Update(const float& deltaTime)
 
 	object3d_->SetTransform(transform_);
 	object3d_->Update(nullptr, nullptr, false);
+	objectMeleeHand_->SetTransform(meleeHandTransform_);
+	objectMeleeHand_->Update();
 
 	eventBus_->Publish(PlayerWorldPositionEvent
 		{
@@ -270,6 +283,19 @@ void Player::Draw()
 		{
 			object3d_->Draw(&skinCluster_.influenceBufferView, &skinCluster_.paletteSrvHandle.second);
 		}
+	}
+	if (isDraw_ && isMeleeHandVisible_)
+	{
+		auto environmentPso = PSOManager::GetInstance()->GetPSOData(
+			"Environment", blendMode_, fillMode_);
+		DirectXBase::GetInstance()->GetCommandList()->SetPipelineState(
+			environmentPso.pipelineState.Get());
+		DirectXBase::GetInstance()->GetCommandList()->SetGraphicsRootSignature(
+			environmentPso.rootSignature.Get());
+		SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, environmentTextureIndex_);
+		DissolveManager::GetInstance()->SetCbufferDissolveResource(6, dissolveParams_);
+		DissolveManager::GetInstance()->SetCbufferMaskTexture(7, 0);
+		objectMeleeHand_->Draw();
 	}
 
 #ifdef _DEBUG

@@ -266,38 +266,16 @@ void PlayerJustAvoidState::Finalize(Player * player)
 
 void PlayerMeleeAttackState::Initialize(Player* player)
 {
-	phase_ = AttackPhase::Approach;
+	phase_ = AttackPhase::Windup;
 	timer_ = 0.0f;
-	startPosition_ = player->GetTranslate();
-	approachPosition_ = startPosition_;
 	player->SetVelocity({ 0.0f, 0.0f, 0.0f });
 	player->SetAttackColliderActive(false);
+	player->SetMeleeHandVisible(true);
+	player->SetMeleeHandTranslate({ 0.8f, 0.0f, 0.5f });
 
-	if (player->HasNearestEnemy())
-	{
-		const Vector3 playerWorld = player->GetWorldPosition();
-		Vector3 toTarget = player->GetNearestEnemyPosition() - playerWorld;
-		if (Length(toTarget) > 0.0001f)
-		{
-			attackDirection_ = Normalize(toTarget);
-			Vector3 destinationWorld = player->GetNearestEnemyPosition() - attackDirection_ * 2.0f;
-			if (player->GetParentWorldTransform())
-			{
-				approachPosition_ = TransformPosition(destinationWorld,
-					Inverse(player->GetParentWorldTransform()->worldMatrix_));
-			}
-			else
-			{
-				approachPosition_ = destinationWorld;
-			}
-		}
-	}
-	else
-	{
-		attackDirection_ = Normalize(TransformNormal(
-			{ 0.0f, 0.0f, 1.0f }, player->GetParentWorldTransform()
-				? player->GetParentWorldTransform()->worldMatrix_ : MakeIdentity4x4()));
-	}
+	attackDirection_ = Normalize(TransformNormal(
+		{ 0.0f, 0.0f, 1.0f }, player->GetParentWorldTransform()
+			? player->GetParentWorldTransform()->worldMatrix_ : MakeIdentity4x4()));
 
 	player->SetMeleeAttackDirection(attackDirection_);
 }
@@ -308,11 +286,9 @@ void PlayerMeleeAttackState::Update(Player* player, const float& deltaTime)
 
 	switch (phase_)
 	{
-	case AttackPhase::Approach:
-		player->SetTranslate(Lerp(startPosition_, approachPosition_, std::min(timer_ / 0.25f, 1.0f)));
-		if (timer_ >= 0.25f) { phase_ = AttackPhase::Windup; timer_ = 0.0f; }
-		break;
 	case AttackPhase::Windup:
+		player->SetMeleeHandTranslate(Lerp({ 0.8f, 0.0f, 0.5f },
+			{ 0.8f, 0.0f, -0.2f }, std::min(timer_ / 0.15f, 1.0f)));
 		if (timer_ >= 0.15f)
 		{
 			phase_ = AttackPhase::Attack;
@@ -321,6 +297,8 @@ void PlayerMeleeAttackState::Update(Player* player, const float& deltaTime)
 		}
 		break;
 	case AttackPhase::Attack:
+		player->SetMeleeHandTranslate(Lerp({ 0.8f, 0.0f, -0.2f },
+			{ 0.8f, 0.0f, 2.0f }, std::min(timer_ / 0.20f, 1.0f)));
 		if (timer_ >= 0.20f)
 		{
 			phase_ = AttackPhase::Recovery;
@@ -329,6 +307,8 @@ void PlayerMeleeAttackState::Update(Player* player, const float& deltaTime)
 		}
 		break;
 	case AttackPhase::Recovery:
+		player->SetMeleeHandTranslate(Lerp({ 0.8f, 0.0f, 2.0f },
+			{ 0.8f, 0.0f, 0.5f }, std::min(timer_ / 0.30f, 1.0f)));
 		if (timer_ >= 0.30f) player->ChangeState(std::make_unique<PlayerIdleState>());
 		break;
 	}
@@ -339,5 +319,6 @@ void PlayerMeleeAttackState::Draw(Player* player) { (void)player; }
 void PlayerMeleeAttackState::Finalize(Player* player)
 {
 	player->SetAttackColliderActive(false);
+	player->SetMeleeHandVisible(false);
 	player->SetVelocity({ 0.0f, 0.0f, 0.0f });
 }

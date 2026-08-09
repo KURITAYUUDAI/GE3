@@ -112,6 +112,8 @@ public:	//外部入出力
 	void SetJustAvoidAccept(const bool justAvoidAccept) { justAvoidAccept_ = justAvoidAccept; }
 	void SetAttackColliderActive(bool active);
 	void SetMeleeAttackDirection(const Vector3& direction) { meleeAttackDirection_ = direction; }
+	void SetMeleeHandVisible(bool visible) { isMeleeHandVisible_ = visible; }
+	void SetMeleeHandTranslate(const Vector3& translate) { meleeHandTransform_.translate = translate; }
 
 private:
 
@@ -133,6 +135,9 @@ private:
 	PSOManager::FillMode fillMode_ = PSOManager::FillMode::kSolid;
 
 	std::unique_ptr<Object3d> object3d_;
+	std::unique_ptr<Object3d> objectMeleeHand_;
+	EulerTransform meleeHandTransform_{};
+	bool isMeleeHandVisible_ = false;
 
 	Animation animation_;
 	float animationTime = 0.0f;

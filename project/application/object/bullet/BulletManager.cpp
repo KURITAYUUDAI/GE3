@@ -216,11 +216,26 @@ void BulletManager::CreatePlayerBullet(const Vector3& position, const Vector3& v
 	newBullet->Initialize(position, velocity, Bullet::ID::kPlayer, "playerBullet.obj");
 	newBullet->SetSize({ 0.4f, 0.4f, 0.4f });
 	newBullet->GetCollider()->SetRadius(0.4f);
+	newBullet->GetCollider()->SetDamage(1);
 	bullets_.push_back(std::move(newBullet));
 
 	/*PlaySEShot();
 	isPlayShotSE_ = false;
 	*/
+}
+
+void BulletManager::CreateChargedPlayerBullet(const Vector3& position, const Vector3& velocity)
+{
+	if (bullets_.size() >= kMaxBullet)
+	{
+		return;
+	}
+	std::unique_ptr<Bullet> newBullet = std::make_unique<Bullet>();
+	newBullet->Initialize(position, velocity, Bullet::ID::kPlayer, "playerBullet.obj");
+	newBullet->SetSize({ 1.5f, 1.5f, 1.5f });
+	newBullet->GetCollider()->SetRadius(1.5f);
+	newBullet->GetCollider()->SetDamage(3);
+	bullets_.push_back(std::move(newBullet));
 }
 
 void BulletManager::CreateCounterBullet(const Vector3& position, const Vector3& velocity)
@@ -233,6 +248,7 @@ void BulletManager::CreateCounterBullet(const Vector3& position, const Vector3& 
 	newBullet->Initialize(position, velocity, Bullet::ID::kPlayer, "playerBullet.obj");
 	newBullet->SetSize({ 2.0f, 2.0f, 2.0f });
 	newBullet->GetCollider()->SetRadius(2.0f);
+	newBullet->GetCollider()->SetDamage(2);
 	bullets_.push_back(std::move(newBullet));
 }
 
@@ -246,6 +262,7 @@ void BulletManager::CreateEnemyBullet(const Vector3& position, const Vector3& ve
 	newBullet->Initialize(position, velocity, Bullet::ID::kEnemy, "enemyBullet.obj");
 	newBullet->SetSize({2.0f, 2.0f, 2.0f});
 	newBullet->GetCollider()->SetRadius(2.0f);
+	newBullet->GetCollider()->SetDamage(1);
 	bullets_.push_back(std::move(newBullet));
 
 	/*PlaySEShot();

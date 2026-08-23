@@ -49,6 +49,10 @@ public:	// Command
 	void Decelerate();
 	void LockOn();
 	void Shot();
+	void ChargedShot();
+	void StartChargeEffect();
+	void UpdateChargeEffect(float deltaTime);
+	void StopChargeEffect();
 	void MeleeAttack();
 	void Avoid(const Vector2& direction);
 	void JustAvoid(const Vector3& avoidDirection);
@@ -136,7 +140,9 @@ private:
 
 	std::unique_ptr<Object3d> object3d_;
 	std::unique_ptr<Object3d> objectMeleeHand_;
+	std::unique_ptr<Object3d> objectChargeRing_;
 	EulerTransform meleeHandTransform_{};
+	EulerTransform chargeRingTransform_{};
 	bool isMeleeHandVisible_ = false;
 
 	Animation animation_;
@@ -191,6 +197,7 @@ private:
 	bool justAvoidAccept_ = false;
 
 	std::unique_ptr<ParticleEmitter> justAvoidEmitter_;
+	bool isChargeEffectActive_ = false;
 
 
 	std::unique_ptr<JustAvoidDarken> justAvoidDarken_;

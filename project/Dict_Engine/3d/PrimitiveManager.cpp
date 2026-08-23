@@ -117,6 +117,20 @@ void PrimitiveManager::CreateRing(const std::string& name, const RingConfig& con
 					innerB,
 					innerA
 			});
+
+		if (config.doubleSided)
+		{
+			mesh.indices.insert(
+				mesh.indices.end(),
+				{
+					innerA,
+					outerB,
+					outerA,
+					innerA,
+					innerB,
+					outerB
+				});
+		}
 	}
 
 	/*mesh.material.textureFilePath = "";

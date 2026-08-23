@@ -57,6 +57,7 @@ public:
 	{
 		// 分割数
 		uint32_t segments = 32;
+		bool doubleSided = false;
 
 		// 半径制御点
 		std::vector<RingRadiusControlPoint> radiusPoints;

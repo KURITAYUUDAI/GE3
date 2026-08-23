@@ -57,6 +57,7 @@ public:
 
 	bool PushKey(BYTE keyNum);
 	bool TriggerKey(BYTE keyNum);
+	bool ReleaseKey(BYTE keyNum);
 
 	POINT MousePoint();
 	bool PushMouse(BYTE mouseButton);
@@ -67,6 +68,7 @@ public:
 	bool IsControllerConnected(){ return isControllerConnected_; }
 	bool PushButton(WORD button);    // 例: XINPUT_GAMEPAD_A
 	bool TriggerButton(WORD button);
+	bool ReleaseButton(WORD button);
 	float GetLeftStickX();
 	float GetLeftStickY();
 	float GetRightStickX();

@@ -43,7 +43,7 @@ public:
 private:
 
 	std::unique_ptr<IPlayerCommand>      moveCommand_;
-	std::unique_ptr<IPlayerCommand>      shotCommand_;
+	std::unique_ptr<LongPressShotCommand> shotCommand_;
 	std::unique_ptr<IPlayerCommand>      avoidCommand_;
 	std::unique_ptr<IPlayerCommand>      meleeAttackCommand_;
 };

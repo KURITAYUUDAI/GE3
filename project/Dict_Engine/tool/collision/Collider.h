@@ -26,6 +26,7 @@ public:
 	const float& GetRadius(){ return radius_; }
 	uint32_t GetAttribute() const { return attribute_; }
 	uint32_t GetMask() const {return mask_; }
+	int GetDamage() const { return damage_; }
 
 	ICollisionObserver* GetOwner() { return owner_; }
 	
@@ -41,6 +42,7 @@ public:
 	void SetAttribute(uint32_t attribute){ attribute_ = attribute; }
 	void SetMask(CollisionAttribute mask) { mask_ = ~static_cast<uint32_t>(mask); }
 	void SetMask(uint32_t mask) { mask_ = mask; }
+	void SetDamage(int damage) { damage_ = damage; }
 
 	void SetOwner(ICollisionObserver* owner) { owner_ = owner; }
 	void SetOnCollision(CollisionCallback callback) { onCollision_ = std::move(callback); }
@@ -55,6 +57,7 @@ private:
 
 	uint32_t attribute_ = 0xffffffff;
 	uint32_t mask_ = 0xffffffff;
+	int damage_ = 0;
 
 
 

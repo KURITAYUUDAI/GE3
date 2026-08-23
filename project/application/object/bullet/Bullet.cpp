@@ -61,6 +61,7 @@ void Bullet::Initialize(const Vector3& position, const Vector3& velocity, const 
 	transform_.rotate = { 0.0f, 0.0f, 0.0f };
 	transform_.translate = position;
 	velocity_ = velocity;
+	id_ = id;
 
 	
 }

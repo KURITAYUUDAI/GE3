@@ -5,7 +5,7 @@ void PlayerIdleState::Initialize(Player* player)
 {
 	moveCommand_ = std::make_unique<MoveHorizontalCommand>(
 		player->GetInputHandlerSelector()->GetHandler());
-	shotCommand_ = std::make_unique<ShotCommand>(
+	shotCommand_ = std::make_unique<LongPressShotCommand>(
 		player->GetInputHandlerSelector()->GetHandler());
 	avoidCommand_ = std::make_unique<AvoidCommand>(
 		player->GetInputHandlerSelector()->GetHandler());
@@ -21,17 +21,30 @@ void PlayerIdleState::Update(Player * player, const float& deltaTime)
 	
 	if (handler->IsActionTriggerd("shot"))
 	{
-		shotCommand_->Execute(player);
+		shotCommand_->Update(player, deltaTime);
 		return; // ★ 追加: Shot()内部でChangeStateされる
 	}
 	if (handler->IsActionTriggerd("avoid"))
 	{
+		shotCommand_->Cancel(player);
 		avoidCommand_->Execute(player);
 		return; // ★ 追加: Avoid()内部でChangeStateされる
 	}
 	if (handler->IsActionTriggerd("melee"))
 	{
+		shotCommand_->Cancel(player);
 		meleeAttackCommand_->Execute(player);
+		return;
+	}
+	const LongPressShotCommand::Result shotResult = shotCommand_->Update(player, deltaTime);
+	if (shotResult == LongPressShotCommand::Result::ChargedShot)
+	{
+		player->ChargedShot();
+		return;
+	}
+	if (shotResult == LongPressShotCommand::Result::NormalShot)
+	{
+		player->Shot();
 		return;
 	}
 }
@@ -43,7 +56,7 @@ void PlayerIdleState::Draw(Player* player)
 
 void PlayerIdleState::Finalize(Player* player)
 {
-	(void)player;
+	shotCommand_->Cancel(player);
 }
 
 void PlayerShotState::Initialize(Player* player)

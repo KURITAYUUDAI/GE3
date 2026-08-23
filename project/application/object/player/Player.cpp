@@ -71,6 +71,7 @@ void Player::Initialize()
 	colliderAttack_->SetRadius(2.0f);
 	colliderAttack_->SetAttribute(CollisionAttribute::PlayerAttack);
 	colliderAttack_->SetMask(CollisionAttribute::Player);
+	colliderAttack_->SetDamage(1);
 
 	transform_.scale = { 1.0f, 1.0f, 1.0f };
 	transform_.rotate = { 0.0f, 0.0f, 0.0f };
@@ -98,6 +99,15 @@ void Player::Initialize()
 	ringConfig.alphaFade.endFadeRange = 0.1f;
 	PrimitiveManager::GetInstance()->CreateRing("ring_avoid", ringConfig);
 
+	PrimitiveManager::RingConfig chargeRingConfig;
+	chargeRingConfig.segments = 48;
+	chargeRingConfig.doubleSided = true;
+	chargeRingConfig.innerRadius = 1.7f;
+	chargeRingConfig.outerRadius = 2.2f;
+	chargeRingConfig.innerColor = { 0.0f, 0.2f, 1.0f, 1.0f };
+	chargeRingConfig.outerColor = { 0.0f, 0.8f, 5.0f, 1.0f };
+	PrimitiveManager::GetInstance()->CreateRing("ring_charge", chargeRingConfig);
+
 	ParticleManager::GetInstance()->CreateParticleGroup("ring_avoid", "gradationLine.png");
 	ParticleManager::GetInstance()->SetModel("ring_avoid", "ring_avoid");
 	ParticleManager::GetInstance()->SetIsMoveAccelerationField("ring_avoid", false);
@@ -106,6 +116,16 @@ void Player::Initialize()
 	justAvoidEmitter_ = std::make_unique<ParticleEmitter>();
 	justAvoidEmitter_->Initialize("ring_avoid",
 		{ {1.0f, 2.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }, 1, 0.1f);
+
+	objectChargeRing_ = std::make_unique<Object3d>();
+	objectChargeRing_->Initialize();
+	objectChargeRing_->SetModel("ring_charge");
+	objectChargeRing_->SetEnableLighting(false);
+	objectChargeRing_->SetColor({ 0.0f, 0.4f, 3.0f, 1.0f });
+	objectChargeRing_->SetBlendMode(PSOManager::BlendMode::Add);
+	chargeRingTransform_.scale = { 1.0f, 1.0f, 1.0f };
+	chargeRingTransform_.rotate = { 0.0f, 0.0f, 0.0f };
+	chargeRingTransform_.translate = { 0.0f, 0.0f, 0.0f };
 
 	ChangeState(std::make_unique<PlayerIdleState>());
 }
@@ -230,6 +250,10 @@ void Player::Update(const float& deltaTime)
 	object3d_->Update(nullptr, nullptr, false);
 	objectMeleeHand_->SetTransform(meleeHandTransform_);
 	objectMeleeHand_->Update();
+	Matrix4x4 chargeRingBillboard = CameraManager::GetInstance()->GetMainCamera()->
+		GetBillboardWorldMatrix(chargeRingTransform_.scale, chargeRingTransform_.rotate,
+			GetWorldPosition());
+	objectChargeRing_->Update(&chargeRingBillboard, nullptr, false);
 
 	eventBus_->Publish(PlayerWorldPositionEvent
 		{
@@ -297,6 +321,10 @@ void Player::Draw()
 		DissolveManager::GetInstance()->SetCbufferMaskTexture(7, 0);
 		objectMeleeHand_->Draw();
 	}
+	if (isDraw_ && isChargeEffectActive_)
+	{
+		objectChargeRing_->Draw();
+	}
 
 #ifdef _DEBUG
 	DebugDrawManager::GetInstance()->AddSphere(GetWorldPosition(),
@@ -331,7 +359,7 @@ void Player::OnCollision(Collider* self, Collider* other)
 		if (other->GetAttribute() == static_cast<uint32_t>(CollisionAttribute::Enemy) &&
 			meleeHitEnemies_.insert(other->GetOwner()).second)
 		{
-			static_cast<Enemy*>(other->GetOwner())->Damage(1);
+			static_cast<Enemy*>(other->GetOwner())->Damage(self->GetDamage());
 		}
 		return;
 	}
@@ -346,7 +374,7 @@ void Player::OnCollision(Collider* self, Collider* other)
 	{
 		if (damageTimer_ == 0.0f)
 		{
-			Damage(1);
+			Damage(other->GetDamage());
 			//PlaySEHit();
 		}
 		if (hitPoint_ <= 0)
@@ -461,6 +489,43 @@ void Player::Shot()
 		BulletManager::GetInstance()->CreatePlayerBullet(GetWorldPosition(), bulletDirection * bulletSpeed_);
 		ChangeState(std::make_unique<PlayerShotState>());
 	}
+}
+
+void Player::ChargedShot()
+{
+	Vector3 bulletDirection = { 0.0f, 0.0f, 1.0f };
+	if (lockOnEnemyID_ != 0 && lockOnEnemyID_ == cachedNearestEnemyID_)
+	{
+		Vector3 toTarget = cachedNearestEnemyPosition_ - GetWorldPosition();
+		if (Length(toTarget) > 0.0001f)
+		{
+			bulletDirection = Normalize(toTarget);
+		}
+	}
+	else
+	{
+		bulletDirection = Normalize(TransformNormal(
+			bulletDirection, object3d_->GetWorldTransform()->worldMatrix_));
+	}
+
+	BulletManager::GetInstance()->CreateChargedPlayerBullet(
+		GetWorldPosition(), bulletDirection * bulletSpeed_);
+	ChangeState(std::make_unique<PlayerShotState>());
+}
+
+void Player::StartChargeEffect()
+{
+	isChargeEffectActive_ = true;
+}
+
+void Player::UpdateChargeEffect(float deltaTime)
+{
+	(void)deltaTime;
+}
+
+void Player::StopChargeEffect()
+{
+	isChargeEffectActive_ = false;
 }
 
 void Player::MeleeAttack()

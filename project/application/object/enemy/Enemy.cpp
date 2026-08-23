@@ -30,6 +30,7 @@ void Enemy::Initialize()
 	collider_->SetRadius(1.0f);
 	collider_->SetAttribute(CollisionAttribute::Enemy);
 	collider_->SetMask(CollisionAttribute::Enemy);
+	collider_->SetDamage(1);
 
 	objectRightHand_ = std::make_unique<Object3d>();
 	objectRightHand_->Initialize();
@@ -50,6 +51,7 @@ void Enemy::Initialize()
 	colliderAttack_->SetRadius(2.0f);
 	colliderAttack_->SetAttribute(CollisionAttribute::EnemyAttack);
 	colliderAttack_->SetMask(CollisionAttribute::Enemy);
+	colliderAttack_->SetDamage(1);
 	colliderAttack_->SetParent(objectRightHand_->GetWorldTransform());
 	colliderAttack_->SetLocalPosition({ 0.0f, 0.0f, -3.0f });
 
@@ -240,9 +242,9 @@ void Enemy::OnCollision(Collider* self, Collider* other)
 		return;
 	}
 
-	if (damageTimer_ == 0.0f)
+	if (damageTimer_ == 0.0f && other->GetDamage() > 0)
 	{
-		Damage(1);
+		Damage(other->GetDamage());
 		damageTimer_ = kDamageInvincible_;
 		//PlaySEHit();
 	}

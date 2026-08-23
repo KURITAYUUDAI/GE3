@@ -39,6 +39,13 @@ bool KeyboardInputHandler::IsActionTriggerd(const std::string& actionName)
     return InputManager::GetInstance()->TriggerKey(it->second);
 }
 
+bool KeyboardInputHandler::IsActionReleased(const std::string& actionName)
+{
+    auto it = keyBindings_.find(actionName);
+    if (it == keyBindings_.end()) return false;
+    return InputManager::GetInstance()->ReleaseKey(it->second);
+}
+
 void GamepadInputHandler::AssignKey(const std::string& actionName, int buttonCode)
 {
     buttonBindings_[actionName] = buttonCode;
@@ -69,6 +76,13 @@ bool GamepadInputHandler::IsActionTriggerd(const std::string& actionName)
     auto it = buttonBindings_.find(actionName);
     if (it == buttonBindings_.end()) return false;
     return InputManager::GetInstance()->TriggerButton(it->second);
+}
+
+bool GamepadInputHandler::IsActionReleased(const std::string& actionName)
+{
+    auto it = buttonBindings_.find(actionName);
+    if (it == buttonBindings_.end()) return false;
+    return InputManager::GetInstance()->ReleaseButton(it->second);
 }
 
 

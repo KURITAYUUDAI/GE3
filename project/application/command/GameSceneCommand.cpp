@@ -20,6 +20,53 @@ void ShotCommand::Execute(Player* player)
 	player->Shot();
 }
 
+LongPressShotCommand::Result LongPressShotCommand::Update(Player* player, float deltaTime)
+{
+	if (inputHandler_->IsActionPressed("shot"))
+	{
+		if (!isCharging_)
+		{
+			isCharging_ = true;
+			holdTime_ = 0.0f;
+			isChargeEffectVisible_ = false;
+		}
+		holdTime_ += deltaTime;
+		if (holdTime_ >= kChargeDuration)
+		{
+			if (!isChargeEffectVisible_)
+			{
+				player->StartChargeEffect();
+				isChargeEffectVisible_ = true;
+			}
+			player->UpdateChargeEffect(deltaTime);
+		}
+		return Result::None;
+	}
+
+	if (isCharging_ && inputHandler_->IsActionReleased("shot"))
+	{
+		const bool isChargedShot = holdTime_ >= kChargeDuration;
+		isCharging_ = false;
+		isChargeEffectVisible_ = false;
+		holdTime_ = 0.0f;
+		player->StopChargeEffect();
+		return isChargedShot ? Result::ChargedShot : Result::NormalShot;
+	}
+
+	return Result::None;
+}
+
+void LongPressShotCommand::Cancel(Player* player)
+{
+	if (isCharging_)
+	{
+		player->StopChargeEffect();
+	}
+	isCharging_ = false;
+	isChargeEffectVisible_ = false;
+	holdTime_ = 0.0f;
+}
+
 void AvoidCommand::Execute(Player* player)
 {
     Vector2 direction = inputHandler_->GetDirection();

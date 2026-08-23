@@ -104,6 +104,11 @@ bool InputManager::TriggerKey(BYTE keyNum)
 	return false;
 }
 
+bool InputManager::ReleaseKey(BYTE keyNum)
+{
+	return keyPre_[keyNum] && !key_[keyNum];
+}
+
 bool InputManager::PushMouse(BYTE mouseButton)
 {
 	if (mouseState_.rgbButtons[mouseButton] & 0x80)
@@ -158,6 +163,13 @@ bool InputManager::TriggerButton(WORD button)
 		return true;
 	}
 	return false;
+}
+
+bool InputManager::ReleaseButton(WORD button)
+{
+	if (!isControllerConnected_) return false;
+	return (controllerStatePre_.Gamepad.wButtons & button) != 0 &&
+		(controllerState_.Gamepad.wButtons & button) == 0;
 }
 
 float InputManager::GetLeftStickX()

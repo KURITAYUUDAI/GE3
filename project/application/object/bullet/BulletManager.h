@@ -47,6 +47,7 @@ public:
 
 	// 味方弾の生成
 	void CreatePlayerBullet(const Vector3& position, const Vector3& velocity);
+	void CreateChargedPlayerBullet(const Vector3& position, const Vector3& velocity);
 
 	// カウンター弾の生成
 	void CreateCounterBullet(const Vector3& position, const Vector3& velocity);

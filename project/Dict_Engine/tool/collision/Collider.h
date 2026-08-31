@@ -14,6 +14,12 @@ enum class CollisionAttribute : uint32_t
 	EnemyAttack = 0b1 << 3,
 };
 
+enum class ColliderShape
+{
+	Sphere,
+	AABB,
+};
+
 class Collider
 {
 public:
@@ -23,7 +29,10 @@ public:
 public:
 
 	const Vector3& GetWorldPosition() const { return worldPosition_; }
-	const float& GetRadius(){ return radius_; }
+	const float& GetRadius() const { return radius_; }
+	ColliderShape GetShape() const { return shape_; }
+	const Vector3& GetSize() const { return size_; }
+	AABB GetAABB() const;
 	uint32_t GetAttribute() const { return attribute_; }
 	uint32_t GetMask() const {return mask_; }
 	int GetDamage() const { return damage_; }
@@ -37,6 +46,8 @@ public:
 	void SetWorldPosition(const Vector3& position) { worldPosition_ = position; }
 
 	void SetRadius(const float& radius){ radius_ = radius; }
+	void SetShape(ColliderShape shape) { shape_ = shape; }
+	void SetSize(const Vector3& size) { size_ = size; }
 
 	void SetAttribute(CollisionAttribute attribute) { attribute_ = static_cast<uint32_t>(attribute); }
 	void SetAttribute(uint32_t attribute){ attribute_ = attribute; }
@@ -52,6 +63,8 @@ public:
 private:
 
 	float radius_ = 1.0f;
+	ColliderShape shape_ = ColliderShape::Sphere;
+	Vector3 size_{ 2.0f, 2.0f, 2.0f };
 	ICollisionObserver* owner_ = nullptr;
 	CollisionCallback onCollision_;
 

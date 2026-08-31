@@ -215,11 +215,27 @@ void Enemy::Draw()
 	}
 
 #ifdef _DEBUG
-	DebugDrawManager::GetInstance()->AddSphere(GetWorldPosition(),
-		collider_->GetRadius(), {1.0f, 0.0f, 1.0f, 1.0f}, 8);
+	if (collider_->GetShape() == ColliderShape::AABB)
+	{
+		DebugDrawManager::GetInstance()->AddBox(collider_->GetWorldPosition(),
+			collider_->GetSize(), { 1.0f, 0.0f, 1.0f, 1.0f });
+	}
+	else
+	{
+		DebugDrawManager::GetInstance()->AddSphere(collider_->GetWorldPosition(),
+			collider_->GetRadius(), { 1.0f, 0.0f, 1.0f, 1.0f }, 8);
+	}
 
-	DebugDrawManager::GetInstance()->AddSphere(colliderAttack_->GetWorldPosition(),
-		colliderAttack_->GetRadius(), { 1.0f, 0.0f, 1.0f, 1.0f }, 8);
+	if (colliderAttack_->GetShape() == ColliderShape::AABB)
+	{
+		DebugDrawManager::GetInstance()->AddBox(colliderAttack_->GetWorldPosition(),
+			colliderAttack_->GetSize(), { 1.0f, 0.0f, 1.0f, 1.0f });
+	}
+	else
+	{
+		DebugDrawManager::GetInstance()->AddSphere(colliderAttack_->GetWorldPosition(),
+			colliderAttack_->GetRadius(), { 1.0f, 0.0f, 1.0f, 1.0f }, 8);
+	}
 #endif
 }
 

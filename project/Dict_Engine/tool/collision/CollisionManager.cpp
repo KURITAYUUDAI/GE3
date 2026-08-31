@@ -46,13 +46,31 @@ void CollisionManager::CheckAllCollisions()
 				continue;
 			}
 
-            Vector3 posA = a->GetWorldPosition();
-            Vector3 posB = b->GetWorldPosition();
+            bool isColliding = false;
+            if (a->GetShape() == ColliderShape::Sphere &&
+                b->GetShape() == ColliderShape::Sphere)
+            {
+                const Sphere sphereA{ a->GetWorldPosition(), a->GetRadius() };
+                const Sphere sphereB{ b->GetWorldPosition(), b->GetRadius() };
+                isColliding = IsCollision(sphereA, sphereB);
+            }
+            else if (a->GetShape() == ColliderShape::AABB &&
+                     b->GetShape() == ColliderShape::AABB)
+            {
+                isColliding = IsCollision(a->GetAABB(), b->GetAABB());
+            }
+            else if (a->GetShape() == ColliderShape::AABB)
+            {
+                const Sphere sphereB{ b->GetWorldPosition(), b->GetRadius() };
+                isColliding = IsCollision(a->GetAABB(), sphereB);
+            }
+            else
+            {
+                const Sphere sphereA{ a->GetWorldPosition(), a->GetRadius() };
+                isColliding = IsCollision(b->GetAABB(), sphereA);
+            }
 
-            float distance = Length(posB - posA);
-            float radiusSum = a->GetRadius() + b->GetRadius();
-
-            if (distance <= radiusSum) 
+            if (isColliding)
             {
                 a->OnCollision(b);
                 b->OnCollision(a);

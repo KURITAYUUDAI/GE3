@@ -60,7 +60,8 @@ void Player::Initialize()
 
 	collider_ = std::make_unique<Collider>();
 	collider_->SetOwner(this);
-	collider_->SetRadius(1.0f);
+	collider_->SetShape(ColliderShape::AABB);
+	collider_->SetSize({ 2.0f, 2.0f, 2.0f });
 	collider_->SetAttribute(CollisionAttribute::Player);
 	collider_->SetMask(CollisionAttribute::Player);
 
@@ -327,12 +328,28 @@ void Player::Draw()
 	}
 
 #ifdef _DEBUG
-	DebugDrawManager::GetInstance()->AddSphere(GetWorldPosition(),
-		collider_->GetRadius(), { 1.0f, 1.0f, 1.0f, 1.0f }, 8);
+	if (collider_->GetShape() == ColliderShape::AABB)
+	{
+		DebugDrawManager::GetInstance()->AddBox(collider_->GetWorldPosition(),
+			collider_->GetSize(), { 1.0f, 1.0f, 1.0f, 1.0f });
+	}
+	else
+	{
+		DebugDrawManager::GetInstance()->AddSphere(collider_->GetWorldPosition(),
+			collider_->GetRadius(), { 1.0f, 1.0f, 1.0f, 1.0f }, 8);
+	}
 	if (isAttackColliderActive_)
 	{
-		DebugDrawManager::GetInstance()->AddSphere(colliderAttack_->GetWorldPosition(),
-			colliderAttack_->GetRadius(), { 0.0f, 1.0f, 1.0f, 1.0f }, 8);
+		if (colliderAttack_->GetShape() == ColliderShape::AABB)
+		{
+			DebugDrawManager::GetInstance()->AddBox(colliderAttack_->GetWorldPosition(),
+				colliderAttack_->GetSize(), { 0.0f, 1.0f, 1.0f, 1.0f });
+		}
+		else
+		{
+			DebugDrawManager::GetInstance()->AddSphere(colliderAttack_->GetWorldPosition(),
+				colliderAttack_->GetRadius(), { 0.0f, 1.0f, 1.0f, 1.0f }, 8);
+		}
 	}
 #endif
 }

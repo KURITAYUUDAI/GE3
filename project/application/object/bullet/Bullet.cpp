@@ -91,8 +91,16 @@ void Bullet::Draw()
 	object3d_->Draw();
 
 #ifdef _DEBUG
-	DebugDrawManager::GetInstance()->AddSphere(GetWorldPosition(),
-		collider_->GetRadius(), { 0.0f, 0.0f, 0.0f, 1.0f }, 6);
+	if (collider_->GetShape() == ColliderShape::AABB)
+	{
+		DebugDrawManager::GetInstance()->AddBox(collider_->GetWorldPosition(),
+			collider_->GetSize(), { 0.0f, 0.0f, 0.0f, 1.0f });
+	}
+	else
+	{
+		DebugDrawManager::GetInstance()->AddSphere(collider_->GetWorldPosition(),
+			collider_->GetRadius(), { 0.0f, 0.0f, 0.0f, 1.0f }, 6);
+	}
 #endif
 }
 
